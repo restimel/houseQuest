@@ -12,6 +12,7 @@ const House = Vue.component('House', {
             houses: [],
             updateDate: 0,
             createDate: 0,
+            orientation: 'UP',
         };
     },
     methods: {
@@ -29,7 +30,7 @@ const House = Vue.component('House', {
             this.maze = house.maze;
             this.updateDate = house.updateDate;
             this.createDate = house.createDate;
-            
+
             return this;
         },
         save: function() {
@@ -44,7 +45,7 @@ const House = Vue.component('House', {
             const maze = this.maze;
             const column = maze[x];
             if (column && column[y]) {
-                return column[y];
+                return this.orientationCell(column[y]);
             }
 
             return {
@@ -54,6 +55,41 @@ const House = Vue.component('House', {
                 r: false, //right
             };
         },
+        orientationCell: function(cell) {
+            const orientation = this.orientation;
+            let u, d, l, r;
+
+            switch(orientation) {
+                case 'DOWN':
+                    u = 'd';
+                    d = 'u';
+                    l = 'r';
+                    r = 'l';
+                    break;
+                case 'LEFT':
+                    u = 'r';
+                    d = 'l';
+                    l = 'u';
+                    r = 'd';
+                    break;
+                case 'RIGHT':
+                    u = 'l';
+                    d = 'r';
+                    l = 'd';
+                    r = 'u';
+                    break;
+                case 'UP':
+                default:
+                    return cell;
+            }
+
+            return {
+                u: cell[u],
+                d: cell[d],
+                l: cell[l],
+                r: cell[r],
+            };
+        }
     },
 });
 

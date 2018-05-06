@@ -15,11 +15,6 @@ const Village = Vue.component('Village', {
             createDate: 0,
         };
     },
-    computed: {
-        // houseMaze: function() {
-            
-        // },
-    },
     methods: {
         get: async function(name) {
             let village = await store.village.get(name);
@@ -70,7 +65,9 @@ const Village = Vue.component('Village', {
                 for (let y = 0; y < confVillage.sizeY; y++) {
                     const house = new House();
                     houseMaze[x][y] = house;
-                    promises.push(house.get(houses[x] && houses[x][y] || ''));
+                    const [houseName, orientation] = (houses[x] && houses[x][y] || '').split('§')[0];
+                    house.orientation = orientation;
+                    promises.push(house.get(houseName));
                 }
             }
 
