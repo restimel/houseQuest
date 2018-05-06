@@ -1,6 +1,6 @@
 <template>
     <div>
-        c<span>ouc</span>ou ;)
+        Welcome to the house quest manipulator!
     </div>
 </template>
 
@@ -11,7 +11,4 @@ export default {
 </script>
 
 <style scoped>
-span {
-  color: #fc3030;
-}
 </style>

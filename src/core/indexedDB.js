@@ -54,7 +54,7 @@ function setDB(db) {
 
 function upgradeDB(event) {
     setDB(event.target.result);
-    
+
     const oldVersion = event.oldVersion;
 
     for (const table of tables) {
@@ -78,17 +78,6 @@ function upgradeDB(event) {
             }
         }
     }
-
-	// switch(event.oldVersion) {
-	// 	case 0:
-	// 		let objectStore = DB.createObjectStore(tableVillage, {keyPath: 'code'});
-	// 		objectStore.createIndex('index_code', 'code', {unique: true});
-	// 		objectStore.createIndex('index_nbw', 'nbw', {unique: false});
-	// 		objectStore.createIndex('index_nbf', 'nbf', {unique: false});
-	// 		objectStore.createIndex('index_create', 'create', {unique: false});
-	// 		objectStore.createIndex('index_update', 'update', {unique: false});
-	// 		objectStore.createIndex('index_name', 'name', {unique: true});
-	// }
 }
 
 function onVersionChange(event) {
@@ -149,7 +138,7 @@ for (const table of tables) {
             });
         },
 
-        get: function(id) {
+        get: function(id = '') {
             return new Promise(async (success, error) => {
                 const DB = await DBReady;
                 const request = DB
@@ -163,7 +152,7 @@ for (const table of tables) {
             });
         },
 
-        has: function (id) {
+        has: function (id = '') {
             return new Promise(async (success, error) => {
                 const DB = await DBReady;
                 const request = DB
@@ -224,88 +213,6 @@ for (const table of tables) {
 
     store[table.name] = data;
 }
-
-// self.store = {
-// 	gobleans: {
-// 		getAll: function(index = 'code', ascOrder = true) {
-// 			return new Promise(async (success, error) => {
-// 				const DB = await DBReady;
-// 				const request = DB
-// 					.transaction([tableVillage], 'readonly')
-// 					.objectStore(tableVillage) //how to sort
-// 					.index('index_' + index)
-// 					.getAll();
-// 				request.onsuccess = function(event) {
-// 					success(ascOrder ? event.target.result : event.target.result.reverse());
-// 				};
-// 				request.onerror = manageError(error);
-// 			});
-// 		},
-// 		get: function(code) {
-// 			return new Promise(async (success, error) => {
-// 				const DB = await DBReady;
-// 				const request = DB
-// 					.transaction([tableVillage], 'readonly')
-// 					.objectStore(tableVillage)
-// 					.get(code);
-// 				request.onsuccess = function(event) {
-// 					success(event.target.result);
-// 				};
-// 				request.onerror = manageError(error);
-// 			});
-// 		},
-// 		has: function(code) {
-// 			return new Promise(async (success, error) => {
-// 				const DB = await DBReady;
-// 				const request = DB
-// 					.transaction([tableVillage], 'readonly')
-// 					.objectStore(tableVillage)
-// 					.get(code);
-// 				request.onsuccess = function(event) {
-// 					success(typeof event.target.result !== 'undefined');
-// 				};
-// 				request.onerror = manageError(error);
-// 			});
-// 		},
-// 		delete: function(code) {
-// 			return new Promise(async (success, error) => {
-// 				const DB = await DBReady;
-// 				const request = DB
-// 					.transaction([tableVillage], 'readwrite')
-// 					.objectStore(tableVillage)
-// 					.delete(code);
-// 				request.onsuccess = function(event) {
-// 					success(event.target.result);
-// 				};
-// 				request.onerror = manageError(error);
-// 			});
-// 		},
-// 		set: function(item) {
-// 			return new Promise(async (success, error) => {
-// 				if (!item.code) {
-// 					console.log(item)
-// 					error('no code for this goblean');
-// 				}
-// 				const oldItem = await this.has(item.code);
-
-// 				if (!oldItem) {
-// 					item.create = Date.now();
-// 				}
-// 				item.update = Date.now();
-
-// 				const DB = await DBReady;
-// 				const request = DB
-// 					.transaction([tableVillage], 'readwrite')
-// 					.objectStore(tableVillage)
-// 					.put(item);
-// 				request.onsuccess = function(event) {
-// 					success(event.target.result);
-// 				};
-// 				request.onerror = manageError(error);
-// 			});
-// 		}
-// 	}
-// };
 
 })();
 

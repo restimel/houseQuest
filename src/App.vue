@@ -26,10 +26,16 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
-    color: #2c3e50;
     margin: 0;
 }
 .page-view {
     padding: 1em;
+    background-color: rgb(235, 230, 255);
+    overflow: auto;
+    position: absolute;
+    top: 50px;
+    bottom: 0;
+    left: 0;
+    right: 0;
 }
 </style>

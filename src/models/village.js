@@ -11,6 +11,7 @@ const Village = Vue.component('Village', {
             name: '',
             maze: [],
             houses: [],
+            houseModels: [],
             updateDate: 0,
             createDate: 0,
         };
@@ -35,7 +36,7 @@ const Village = Vue.component('Village', {
             return store.village.set({
                 name: this.name,
                 maze: this.maze,
-                houses: this.houses,
+                houses: this.houseModels.map(houseX => houseX.map(house => house.name + '§' + house.orientation)),
                 updateDate: this.updateDate,
                 createDate: this.createDate,
             });
@@ -71,6 +72,7 @@ const Village = Vue.component('Village', {
                 }
             }
 
+            this.houseModels = houseMaze;
             await Promise.all(promises);
             const xLength = confVillage.sizeX * confHouse.sizeX;
             const yLength = confVillage.sizeY * confHouse.sizeY;
