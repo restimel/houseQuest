@@ -1,5 +1,8 @@
 <template>
 <nav class="menu">
+    <router-link to="house" class="link">
+        House
+    </router-link>
     <router-link to="village" class="link">
         Village
     </router-link>

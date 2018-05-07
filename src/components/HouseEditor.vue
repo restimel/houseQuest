@@ -4,25 +4,22 @@
         <h2>{{ title }}</h2>
     </header>
     <input
-        v-show="villageList.length > 0"
-        placeholder="Choose the village"
-        list="villageList"
+        v-show="houseList.length > 0"
+        placeholder="Choose the house"
+        list="houseList"
         :value="selection"
         @change="load($event.currentTarget.value)"
     >
-    <datalist id="villageList">
-        <option v-for="name of villageList"
-            :key="'village-'+name"
+    <datalist id="houseList">
+        <option v-for="name of houseList"
+            :key="'house-'+name"
             :value="name"
         ></option>
     </datalist>
     
-    <Village :village="village" />
-    <aside>
-        Action
-    </aside>
-    <aside>
-        Analyze
+    <House :house="house" />
+    <aside class="options">
+        Options
     </aside>
     <div class="controls">
         <button
@@ -31,15 +28,15 @@
             Save
         </button>
         <AskDialog
-            title="Save village"
+            title="Save house"
             :show="askDialog"
             @close="askDialog=false"
             @confirm="checkSave"
         >
             <input
-                :class="{dialogFieldError: !village.name}"
-                placeholder="Name of the village"
-                v-model="village.name"
+                :class="{dialogFieldError: !house.name}"
+                placeholder="Name of the house"
+                v-model="house.name"
             >
         </AskDialog>
     </div>
@@ -47,55 +44,65 @@
 </template>
 
 <script>
-//import worker from '@/core/worker';
 import store from '@/core/indexedDB';
-import Village from '@/models/village';
-import VillageView from '@/components/village/SvgVillage';
+import House from '@/models/house';
+import HouseView from '@/components/house/SvgHouse';
 import AskDialog from '@/components/AskDialog';
 
 export default {
-    name: 'VillageEditor',
+    name: 'HouseEditor',
     data: function() {
-        this.refresh().then(() => this.load(this.villageList[0]));
+        this.refresh().then(() => this.load(this.houseList[0]));
 
         return {
-            village: new Village(),
-            villageList: [],
+            house: new House(),
+            houseList: [],
             selection: '',
             askDialog: false,
         };
     },
     computed: {
         title: function() {
-            return this.village.name || '';
+            return this.house.name || '';
         },
     },
     methods: {
+        init: function() {
+            this.house.initMaze();
+            this.house.name = '';
+            this.house.orientation = 'UP';
+        },
         load: async function(name) {
-            console.log(name);
-            const has = await store.village.has(name);
+            const has = await store.house.has(name);
             if (has) {
-                this.village.get(name);
+                this.house.get(name);
             }
         },
         refresh: async function() {
-            const list = await store.village.getAll();
-            this.villageList = list.map(v => v.name);
+            const list = await store.house.getAll()
+            
+            this.houseList = list.map(v => v.name);
         },
-        save: function() {
+        save: async function() {
             this.askDialog = true;
         },
         checkSave: async function() {
-            if (!this.village.name) {
+            if (!this.house.name) {
                 return;
             }
-            await this.village.save();
+            await this.house.save();
             this.refresh();
             this.askDialog = false;
         },
     },
+    created: function() {
+        console.log('created', this.house);
+        if (!this.house.name) {
+            this.init();
+        }
+    },
     components: {
-        Village: VillageView,
+        House: HouseView,
         AskDialog: AskDialog,
     }
 };
@@ -106,8 +113,7 @@ export default {
     display: grid;
     grid-template:
         "header headerSelector" 30px
-        "svg action" 1fr
-        "svg analyze" 1fr
+        "svg options" 1fr
         ". controls" 35px
         / 1fr 300px;
 }
@@ -123,6 +129,9 @@ svg {
 aside {
     border-left: 5px solid rgb(50, 0, 50);
     border-top: 1px solid rgb(50, 0, 50);
+}
+.options {
+    grid-area: options;
 }
 .controls {
     grid-area: controls;
