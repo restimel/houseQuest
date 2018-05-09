@@ -17,10 +17,15 @@
         ></option>
     </datalist>
     
-    <Village :village="village" />
-    <aside>
-        Action
-    </aside>
+    <Village
+        :village="village"
+        :selected="selectedHouse"
+        @selection="selectHouse"
+    />
+    <houseAction
+        :selected="selectedHouse"
+        @change="changeHouse"
+    />
     <aside>
         Analyze
     </aside>
@@ -36,22 +41,33 @@
             @close="askDialog=false"
             @confirm="checkSave"
         >
-            <input
-                :class="{dialogFieldError: !village.name}"
-                placeholder="Name of the village"
-                v-model="village.name"
-            >
+            <div>
+                <input
+                    :class="{dialogFieldError: !village.name}"
+                    placeholder="Name of the village"
+                    v-model="village.name"
+                >
+                <div v-show="isNameUsed"
+                    class="dialogWarn"
+                >
+                    House will be overwritten
+                </div>
+            </div>
         </AskDialog>
     </div>
 </div>
 </template>
 
 <script>
+import Vue from 'vue';
 //import worker from '@/core/worker';
 import store from '@/core/indexedDB';
 import Village from '@/models/village';
 import VillageView from '@/components/village/SvgVillage';
+import HouseAction from '@/components/village/HouseAction';
 import AskDialog from '@/components/AskDialog';
+
+const orientations = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
 
 export default {
     name: 'VillageEditor',
@@ -63,16 +79,19 @@ export default {
             villageList: [],
             selection: '',
             askDialog: false,
+            selectedHouse: {},
         };
     },
     computed: {
         title: function() {
             return this.village.name || '';
         },
+        isNameUsed: function() {
+            return this.villageList.includes(this.village.name);
+        },
     },
     methods: {
         load: async function(name) {
-            console.log(name);
             const has = await store.village.has(name);
             if (has) {
                 this.village.get(name);
@@ -93,10 +112,30 @@ export default {
             this.refresh();
             this.askDialog = false;
         },
+        selectHouse: function(house, idx) {
+            if (this.selectedHouse.house === house) {
+                const [name, orientation] = house.split('§');
+                const newOrientation = orientations[(orientations.indexOf(orientation) + 1)%orientations.length];
+                this.changeHouse(name + '§' + newOrientation);
+            } else {
+                this.selectedHouse = {
+                    house: house,
+                    idx: idx,
+                };
+            }
+        },
+        changeHouse: function(house) {
+            Vue.set(this.village.houses, this.selectedHouse.idx, house);
+            this.selectedHouse = {
+                house: house,
+                idx: this.selectedHouse.idx,
+            };
+        },
     },
     components: {
         Village: VillageView,
         AskDialog: AskDialog,
+        HouseAction: HouseAction,
     }
 };
 </script>
@@ -123,6 +162,7 @@ svg {
 aside {
     border-left: 5px solid rgb(50, 0, 50);
     border-top: 1px solid rgb(50, 0, 50);
+    padding: 1em;
 }
 .controls {
     grid-area: controls;

@@ -15,16 +15,16 @@ const House = Vue.component('House', {
         };
     },
     methods: {
-        initMaze: function() {
+        initMaze: function(withoutBorder = false) {
             const maze = new Array(confHouse.sizeX);
             for (let x = 0; x < confHouse.sizeX; x++) {
                 const column = new Array(confHouse.sizeY);
                 for (let y = 0; y < confHouse.sizeY; y++) {
                     column[y] = {
-                        u: y > 0,
-                        d: y < confHouse.sizeY - 1,
-                        l: x > 0,
-                        r: x < confHouse.sizeX -1,
+                        u: withoutBorder || y > 0,
+                        d: withoutBorder || y < confHouse.sizeY - 1,
+                        l: withoutBorder || x > 0,
+                        r: withoutBorder || x < confHouse.sizeX -1,
                     };
                 }
                 maze[x] = column;
@@ -32,6 +32,11 @@ const House = Vue.component('House', {
             this.maze = maze;
         },
         get: async function(name) {
+            if (name === '_empty_') {
+                this.name = '';
+                this.initMaze(true);
+                return this;
+            }
             let house = await store.house.get(name);
             if (!house) {
                 house = {

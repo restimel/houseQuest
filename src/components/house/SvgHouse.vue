@@ -16,7 +16,7 @@
         />
     </g>
     <template v-if="house.maze[0]">
-        <g v-for="(cellColumn, idx) in  house.maze"
+        <g v-for="(cellColumn, idx) of house.maze"
             :key="'cellColumn-'+idx"
         >
             <g v-for="(cell, idy) of cellColumn"
@@ -110,7 +110,7 @@ export default {
 
     .wall {
         fill: none;
-        stroke: rgb(250, 235, 190);
+        stroke: rgba(250, 235, 190, 0);
         stroke-width: 15;
         stroke-linecap: square;
         cursor: pointer;

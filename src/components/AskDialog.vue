@@ -62,4 +62,7 @@ header {
 .dialogFieldError {
     background-color: rgb(255, 200, 200);
 }
+.dialogWarn {
+    color: rgb(150, 120, 0);
+}
 </style>

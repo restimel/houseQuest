@@ -29,6 +29,7 @@ const Village = Vue.component('Village', {
             }
             this.name = village.name;
             this.houses = village.houses;
+            this.houses = ['House 3§UP', 'House 1§UP', 'House 3§UP', 'House 3§LEFT', 'House 7§UP', 'House 5§UP', 'House 6§UP', 'House 6§UP', 'House 9§LEFT'];
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
         },
@@ -47,7 +48,16 @@ const Village = Vue.component('Village', {
 
             const maze = new Array(xLength);
             for (let x = 0; x < xLength; x++) {
-                maze[x] = new Array(yLength);
+                const column = new Array(yLength)
+                maze[x] = column;
+                for (let y = 0; y < yLength; y++) {
+                    column[y] = {
+                        u: true,
+                        d: true,
+                        l: true,
+                        r: true,
+                    };
+                }
             }
 
             this.maze = maze;
@@ -56,17 +66,19 @@ const Village = Vue.component('Village', {
     watch: {
         houses: async function() {
             const houses = this.houses;
-            const houseMaze = new Array(confVillage.sizeX);
+            const confVillageSizeX = confVillage.sizeX;
+            const confVillageSizeY = confVillage.sizeY;
+            const houseMaze = new Array(confVillageSizeX);
             const promises = [];
 
             this._initMaze();
 
-            for (let x = 0; x < confVillage.sizeX; x++) {
-                houseMaze[x] = new Array(confVillage.sizeY);
-                for (let y = 0; y < confVillage.sizeY; y++) {
+            for (let x = 0; x < confVillageSizeX; x++) {
+                houseMaze[x] = new Array(confVillageSizeY);
+                for (let y = 0; y < confVillageSizeY; y++) {
                     const house = new House();
                     houseMaze[x][y] = house;
-                    const [houseName, orientation] = (houses[x] && houses[x][y] || '').split('§')[0];
+                    const [houseName, orientation] = (houses[x * confVillageSizeX + y] || '').split('§');
                     house.orientation = orientation;
                     promises.push(house.get(houseName));
                 }
@@ -74,8 +86,8 @@ const Village = Vue.component('Village', {
 
             this.houseModels = houseMaze;
             await Promise.all(promises);
-            const xLength = confVillage.sizeX * confHouse.sizeX;
-            const yLength = confVillage.sizeY * confHouse.sizeY;
+            const xLength = confVillageSizeX * confHouse.sizeX;
+            const yLength = confVillageSizeY * confHouse.sizeY;
 
             const getCell = (x, y) => {
                 const villageX = Math.floor(x / confHouse.sizeX)
@@ -114,8 +126,10 @@ const Village = Vue.component('Village', {
                         l: cell0.l && getCell(x - 1, y).r, // left
                         r: cell0.r && getCell(x + 1, y).l, // right
                     };
+                    maze[x][y] = cell;
                 }
             }
+            this.$emit('maze_change');
         },
     },
 });

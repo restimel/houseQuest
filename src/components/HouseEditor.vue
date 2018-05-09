@@ -23,6 +23,11 @@
     </aside>
     <div class="controls">
         <button
+            @click="init"
+        >
+            Reset
+        </button>
+        <button
             @click="save"
         >
             Save
@@ -33,11 +38,18 @@
             @close="askDialog=false"
             @confirm="checkSave"
         >
-            <input
-                :class="{dialogFieldError: !house.name}"
-                placeholder="Name of the house"
-                v-model="house.name"
-            >
+            <div>
+                <input
+                    :class="{dialogFieldError: !house.name}"
+                    placeholder="Name of the house"
+                    v-model="house.name"
+                >
+                <div v-show="isNameUsed"
+                    class="dialogWarn"
+                >
+                    House will be overwritten
+                </div>
+            </div>
         </AskDialog>
     </div>
 </div>
@@ -64,6 +76,9 @@ export default {
     computed: {
         title: function() {
             return this.house.name || '';
+        },
+        isNameUsed: function() {
+            return this.houseList.includes(this.house.name);
         },
     },
     methods: {
