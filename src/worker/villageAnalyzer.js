@@ -10,6 +10,13 @@ self.onmessage = ({ data: { id, action, data } }) => {
     self.postMessage(result);
 };
 
+const emptyCell = {
+    u: false,
+    d: false,
+    r: false,
+    l: false,
+};
+
 function doAction(action, data, result) {
     switch (action) {
         case 'analyze':
@@ -26,12 +33,7 @@ function analyze({maze, starts, ends}) {
         return `${x}, ${y}`;
     }
     function getCell(x, y) {
-        return maze[x] && maze[x][y] || {
-            u: false,
-            d: false,
-            r: false,
-            l: false,
-        }
+        return maze[x] && maze[x][y] || emptyCell;
     }
     function computeCell(x, y, dist, parent, dir) {
         const id = getId(x, y);
@@ -45,7 +47,7 @@ function analyze({maze, starts, ends}) {
         cell.dist = dist;
         cell.parent = parent;
         cell.dirParent = dir;
-        accessible.add(id);
+        accessible.set(id, [x, y]);
     }
     function computeSibling(x, y) {
         const id = getId(x ,y);
@@ -77,8 +79,69 @@ function analyze({maze, starts, ends}) {
         }
     }
 
+    function computeDirections() {
+        let lastCell;
+        let dir;
+        let shortestPathLength = Infinity;
+
+        ends.forEach(end => {
+            let dist;
+            const [x, y] = end.split(', ').map(x => +x);
+
+            if (getCell(x + 1, y).l) {
+                dist =  cells[x + 1][y].dist;
+                if (dist < shortestPathLength) {
+                    shortestPathLength = dist;
+                    lastCell = getId(x + 1, y);
+                    //dir is in opposite direction to match the "parent direction"
+                    dir = 'r';
+                }
+            }
+
+            if (getCell(x - 1, y).r) {
+                dist = cells[x - 1][y].dist;
+                if (dist < shortestPathLength) {
+                    shortestPathLength = dist;
+                    lastCell = getId(x - 1, y);
+                    dir = 'l';
+                }
+            }
+
+            if (getCell(x, y + 1).u) {
+                dist = cells[x][y + 1].dist;
+                if (dist < shortestPathLength) {
+                    shortestPathLength = dist;
+                    lastCell = getId(x, y + 1);
+                    dir = 'd';
+                }
+            }
+
+            if (getCell(x, y - 1).d) {
+                dist = cells[x][y - 1].dist;
+                if (dist < shortestPathLength) {
+                    shortestPathLength = dist;
+                    lastCell = getId(x, y - 1);
+                    dir = 'u';
+                }
+            }
+        });
+
+        if (isFinite(shortestPathLength)) {
+            let dist = shortestPathLength;
+            do {
+                const [x, y] = lastCell.split(', ').map(x => +x);
+                const cell = cells[x][y];
+                cell.orientation = '-' + dir;
+                dir = cell.dirParent;
+                lastCell = cell.parent;
+                dist = cell.dist;
+            } while (dist > 1);
+        }
+        return shortestPathLength;
+    }
+
     const dbg = performance.now();
-    const accessible = new Set();
+    const accessible = new Map();
 
     /* prepare a state for all cells to store distance and best direction */
     const mazeW = maze.length;
@@ -99,61 +162,20 @@ function analyze({maze, starts, ends}) {
     }
 
     /* check for all available cells */
-    starts.forEach(start => accessible.add(start));
+    starts.forEach(start => accessible.set(start, start.split(', ').map(x => +x)));
 
-    accessible.forEach(cell => {
-        const [x, y] = cell.split(', ').map(x => +x);
+    accessible.forEach(([x, y]) => {
         computeSibling(x, y);
     });
 
     /* greedy algorithm to compute directions */
-
-    let shortestPathLength = Infinity;
-    let lastCell;
-    let dir;
-    ends.forEach(end => {
-        const [x, y] = end.split(', ').map(x => +x);
-        let dist = (cells[x+1] && cells[x+1][y] || {dist: Infinity}).dist;
-        if (dist < shortestPathLength) {
-            shortestPathLength = dist;
-            lastCell = getId (x+1, y);
-            //dir is in opposite direction to match the "parent direction"
-            dir = 'r';
-        }
-        dist = (cells[x-1] && cells[x-1][y] || {dist: Infinity}).dist;
-        if (dist < shortestPathLength) {
-            shortestPathLength = dist;
-            lastCell = getId(x - 1, y);
-            dir = 'l';
-        }
-        dist = (cells[x] && cells[x][y+1] || {dist: Infinity}).dist;
-        if (dist < shortestPathLength) {
-            shortestPathLength = dist;
-            lastCell = getId(x, y + 1);
-            dir = 'd';
-        }
-        dist = (cells[x] && cells[x][y-1] || {dist: Infinity}).dist;
-        if (dist < shortestPathLength) {
-            shortestPathLength = dist;
-            lastCell = getId(x, y - 1);
-            dir = 'u';
-        }
-    });
-
-    let dist = shortestPathLength;
-    do {
-        const [x, y] = lastCell.split(', ').map(x => +x);
-        const cell = cells[x][y];
-        cell.orientation = '-' + dir;
-        dir = cell.dirParent;
-        lastCell = cell.parent;
-        dist = cell.dist;
-    } while(dist > 1);
+    const shortestPathLength = computeDirections();
 
     console.log(performance.now() - dbg);
     return {
         nbCellAccessible: accessible.size,
         nbShortestPath: shortestPathLength,
         cells: cells,
+        accessible: Array.from(accessible.keys()),
     };
 }
