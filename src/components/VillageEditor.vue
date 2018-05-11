@@ -20,15 +20,16 @@
     <Village
         :village="village"
         :selected="selectedHouse"
+        :result="village.analyzeResult"
         @selection="selectHouse"
     />
     <houseAction
         :selected="selectedHouse"
         @change="changeHouse"
     />
-    <aside>
-        Analyze
-    </aside>
+    <VillageAnalyze
+        :result="village.analyzeResult"
+    />
     <div class="controls">
         <button
             @click="save"
@@ -60,11 +61,11 @@
 
 <script>
 import Vue from 'vue';
-//import worker from '@/core/worker';
 import store from '@/core/indexedDB';
 import Village from '@/models/village';
 import VillageView from '@/components/village/SvgVillage';
 import HouseAction from '@/components/village/HouseAction';
+import VillageAnalyze from '@/components/village/VillageAnalyze';
 import AskDialog from '@/components/AskDialog';
 
 const orientations = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
@@ -136,6 +137,7 @@ export default {
         Village: VillageView,
         AskDialog: AskDialog,
         HouseAction: HouseAction,
+        VillageAnalyze: VillageAnalyze,
     }
 };
 </script>
@@ -146,7 +148,7 @@ export default {
     grid-template:
         "header headerSelector" 30px
         "svg action" 1fr
-        "svg analyze" 1fr
+        "svg analyze" 2fr
         ". controls" 35px
         / 1fr 300px;
 }

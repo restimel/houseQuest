@@ -1,7 +1,7 @@
 <template>
 <svg width="95%" height="95%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
     <defs>
-        <path id="arrow" d="M0,35 v-60 l-20,20 20,-20 20,20" />
+        <path id="arrow" class="arrow" d="M0,35 v-60 l-20,20 20,-20 20,20" />
         <path id="wallLeft" d="M0,0 v100" />
         <path id="wallUp" d="M0,0 h100" />
         <path id="wallRight" d="M100,0 v100" />
@@ -25,6 +25,7 @@
                 :height="size"
             />
             <use href="#arrow"
+                class="outside"
                 x="0"
                 y="0"
                 :transform="transformArrow(start)"
@@ -39,6 +40,7 @@
                 :height="size"
             />
             <use href="#arrow"
+                class="outside"
                 x="0"
                 y="0"
                 :transform="transformArrow(end, true)"
@@ -72,6 +74,24 @@
                 @click="selectHouse(cellHouse, idx)"
             />
         </template>
+
+        <template v-if="result.cells">
+            <g v-for="(cellColumn, idx) of result.cells"
+                :key="'resultCellColumn-'+idx"
+            >
+                <g v-for="(cell, idy) of cellColumn"
+                    :key="'resultCell-'+idx+'-'+idy"
+                >
+                    <use href="#arrow"
+                        v-if="cell.orientation"
+                        class="solution"
+                        x="0"
+                        y="0"
+                        :transform="transformXYArrow(idx, idy, cell.orientation)"
+                    />
+                </g>
+            </g>
+        </template>
     </g>
 </svg>
 </template>
@@ -93,6 +113,12 @@ export default {
             default: false,
         },
         selected: {
+            type: Object,
+            default: function() {
+                return {};
+            },
+        },
+        result: {
             type: Object,
             default: function() {
                 return {};
@@ -151,6 +177,18 @@ export default {
         getHouseY: function(idx) {
             return idx % confVillage.sizeX;
         },
+        transformXYArrow: function(x, y, orientation) {
+            let deg = 0;
+            switch (orientation) {
+                case 'r': case '-l': deg = 90; break
+                case 'l': case '-r': deg = -90; break
+                case 'd': case '-u': deg = 180; break
+                case 'u': case '-d': deg = 0; break
+            }
+            x = (x + 0.5) * this.size;
+            y = (y + 0.5) * this.size;
+            return `translate(${x}, ${y}) rotate(${deg})`;
+        },
         transformArrow: function(cell, opposite) {
             const [x, y] = cell.split(/,\s*/).map(a => (+a + 0.5) * this.size);
             let deg = 0;
@@ -195,10 +233,15 @@ export default {
         stroke-width: 1px;
     }
 
-    #arrow {
+    .arrow {
         fill: none;
-        stroke: white;
         stroke-width: 10px;
+    }
+    .solution {
+        stroke: rgb(100, 210, 200);
+    }
+    .outside {
+        stroke: rgb(250, 250, 250);
     }
 
     .wall {

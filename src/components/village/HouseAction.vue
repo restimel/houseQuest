@@ -39,7 +39,6 @@
 </template>
 
 <script>
-import Village from '@/models/village';
 import store from '@/core/indexedDB';
 
 export default {

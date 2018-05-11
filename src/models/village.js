@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import store from '@/core/indexedDB';
+import worker from '@/core/worker';
 import House from '@/models/house';
 
 import configuration from '@/configuration';
@@ -11,9 +12,9 @@ const Village = Vue.component('Village', {
             name: '',
             maze: [],
             houses: [],
-            houseModels: [],
             updateDate: 0,
             createDate: 0,
+            analyzeResult: {},
         };
     },
     methods: {
@@ -29,7 +30,6 @@ const Village = Vue.component('Village', {
             }
             this.name = village.name;
             this.houses = village.houses;
-            this.houses = ['House 3§UP', 'House 1§UP', 'House 3§UP', 'House 3§LEFT', 'House 7§UP', 'House 5§UP', 'House 6§UP', 'House 6§UP', 'House 9§LEFT'];
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
         },
@@ -37,10 +37,14 @@ const Village = Vue.component('Village', {
             return store.village.set({
                 name: this.name,
                 maze: this.maze,
-                houses: this.houseModels.map(houseX => houseX.map(house => house.name + '§' + house.orientation)),
+                houses: this.houses,
                 updateDate: this.updateDate,
                 createDate: this.createDate,
             });
+        },
+        analyze: function(result) {
+            console.log(performance.now() - self.dbg);
+            this.analyzeResult = result;
         },
         _initMaze: function() {
             const xLength = confVillage.sizeX * confHouse.sizeX;
@@ -84,7 +88,6 @@ const Village = Vue.component('Village', {
                 }
             }
 
-            this.houseModels = houseMaze;
             await Promise.all(promises);
             const xLength = confVillageSizeX * confHouse.sizeX;
             const yLength = confVillageSizeY * confHouse.sizeY;
@@ -129,6 +132,12 @@ const Village = Vue.component('Village', {
                     maze[x][y] = cell;
                 }
             }
+            self.dbg = performance.now();
+            worker('analyze', {
+                maze: this.maze,
+                starts: confVillage.starts,
+                ends: confVillage.ends,
+            }).then(this.analyze.bind(this));
             this.$emit('maze_change');
         },
     },
