@@ -16,7 +16,7 @@
             :value="name"
         ></option>
     </datalist>
-    
+
     <Village
         :village="village"
         :selected="selectedHouse"

@@ -44,6 +44,7 @@ const Village = Vue.component('Village', {
         },
         analyze: function(result) {
             console.log(performance.now() - self.dbg);
+            result.shortestPath = new Set(result.shortestPath);
             this.analyzeResult = result;
         },
         _initMaze: function() {

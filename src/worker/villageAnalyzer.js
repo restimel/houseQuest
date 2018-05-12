@@ -47,6 +47,7 @@ function analyze({maze, starts, ends}) {
         cell.dist = dist;
         cell.parent = parent;
         cell.dirParent = dir;
+        cell.orientation = dir;
         accessible.set(id, [x, y]);
     }
     function computeSibling(x, y) {
@@ -58,7 +59,7 @@ function analyze({maze, starts, ends}) {
             cell = {
                 u: getCell(x, y - 1).d,
                 d: getCell(x, y + 1).u,
-                r: getCell(x + 1, y - 1).l,
+                r: getCell(x + 1, y).l,
                 l: getCell(x - 1, y).r,
             };
         } else {
@@ -128,14 +129,17 @@ function analyze({maze, starts, ends}) {
 
         if (isFinite(shortestPathLength)) {
             let dist = shortestPathLength;
+            /* greedy algorithm */
             do {
                 const [x, y] = lastCell.split(', ').map(x => +x);
                 const cell = cells[x][y];
+                shortestPath.add(lastCell);
                 cell.orientation = '-' + dir;
                 dir = cell.dirParent;
                 lastCell = cell.parent;
                 dist = cell.dist;
             } while (dist > 1);
+            shortestPath.add(lastCell);
         }
         return shortestPathLength;
     }
@@ -162,19 +166,23 @@ function analyze({maze, starts, ends}) {
     }
 
     /* check for all available cells */
-    starts.forEach(start => accessible.set(start, start.split(', ').map(x => +x)));
+    starts.forEach(start => {
+        accessible.set(start, start.split(', ').map(x => +x));
+    });
 
     accessible.forEach(([x, y]) => {
         computeSibling(x, y);
     });
 
-    /* greedy algorithm to compute directions */
+    /* compute directions */
+    const shortestPath = new Set();
     const shortestPathLength = computeDirections();
 
-    console.log(performance.now() - dbg);
+    console.log('analyze (in worker):', performance.now() - dbg);
     return {
         nbCellAccessible: accessible.size,
         nbShortestPath: shortestPathLength,
+        shortestPath: Array.from(shortestPath),
         cells: cells,
         accessible: Array.from(accessible.keys()),
     };

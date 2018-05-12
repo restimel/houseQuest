@@ -84,7 +84,7 @@
                 >
                     <use href="#arrow"
                         v-if="cell.orientation"
-                        class="solution"
+                        :class="result.shortestPath.has(idx+', '+idy) ? 'solution' : 'notSolution'"
                         x="0"
                         y="0"
                         :transform="transformXYArrow(idx, idy, cell.orientation)"
@@ -238,7 +238,10 @@ export default {
         stroke-width: 10px;
     }
     .solution {
-        stroke: rgb(100, 210, 200);
+        stroke: rgb(120, 250, 120);
+    }
+    .notSolution {
+        stroke: rgb(250, 120, 100);
     }
     .outside {
         stroke: rgb(250, 250, 250);
