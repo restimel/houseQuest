@@ -165,6 +165,7 @@ aside {
     border-left: 5px solid rgb(50, 0, 50);
     border-top: 1px solid rgb(50, 0, 50);
     padding: 1em;
+    overflow: auto;
 }
 .controls {
     grid-area: controls;

@@ -38,4 +38,7 @@ body {
     left: 0;
     right: 0;
 }
+summary {
+    cursor: pointer;
+}
 </style>
