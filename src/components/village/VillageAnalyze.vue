@@ -153,15 +153,12 @@ export default {
             const nbShtPath = (this.result.nbShortestPath / this.nbMaxCells) * weight.nbShortPath;
             const nbMovements = (this.nbMovements / (this.nbMaxCells - confVillage.sizeX)) * weight.nbMovements;
             const nbComplexMove = fSx(this.result.complexMovements) * weight.nbComplexMove;
-            console.log(this.result.complexMovements , nbComplexMove, fSx(this.result.complexMovements));
             return nbCell + nbShtPath + nbMovements + nbComplexMove;
         },
         difficultyPercent: function() {
             const percent = Math.round(this.difficulty / this.difficultyMax * 10000) / 100;
             return percent + '%';
         },
-    },
-    methods: {
     },
 };
 </script>
@@ -180,10 +177,10 @@ header {
     font-weight: bold;
 }
 .notResolvable {
-    color: red;
+    color: var(--information-not-resolvable);
 }
 .resolvable {
-    color: green;
+    color: var(--information-resolvable);
 }
 
 .movements {

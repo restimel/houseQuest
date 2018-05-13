@@ -23,22 +23,22 @@ export default {
     display: flex;
     flex-direction: row;
     justify-content: space-around;
-    background-color: rgb(50, 0, 50);
+    background-color: var(--menu-background);
 }
 .link {
     padding: 1em 2em;
-    color: rgb(250, 250, 250);
+    color: var(--menu-text-color);
     text-decoration: none;
 }
 .link:hover {
-    color: rgb(200, 200, 0);
+    color: var(--active-link);
 }
 .router-link-exact-active {
-    background-color: rgb(200, 200, 0);
-    color: rgb(50, 0, 50);
+    background-color: var(--active-link);
+    color: var(--menu-background);
 }
 .router-link-exact-active:hover {
-    color: rgb(50, 0, 50);
+    color: var(--menu-background);
 }
 
 </style>

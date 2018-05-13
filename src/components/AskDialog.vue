@@ -60,9 +60,9 @@ header {
 </style>
 <style>
 .dialogFieldError {
-    background-color: rgb(255, 200, 200);
+    background-color: var(--error-background);
 }
 .dialogWarn {
-    color: rgb(150, 120, 0);
+    color: var(--warning-text);
 }
 </style>

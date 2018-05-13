@@ -216,20 +216,20 @@ export default {
 
 <style scoped>
     .villageWall {
-        fill: rgb(250, 235, 190);
-        stroke: rgb(150, 150, 150);
+        fill: var(--village-background);
+        stroke: var(--village-border);
         stroke-width: 2px;
     }
 
     .villageStart {
-        fill: rgb(150, 250, 150);
-        stroke: rgb(0, 150, 0);
+        fill: var(--start-background);
+        stroke: var(--start-border);
         stroke-width: 1px;
     }
 
     .villageEnd {
-        fill: rgb(250, 150, 150);
-        stroke: rgb(250, 0, 0);
+        fill: var(--end-background);
+        stroke: var(--end-border);
         stroke-width: 1px;
     }
 
@@ -238,23 +238,23 @@ export default {
         stroke-width: 10px;
     }
     .solution {
-        stroke: rgb(120, 250, 120);
+        stroke: var(--arrow-solution);
     }
     .notSolution {
-        stroke: rgb(250, 120, 100);
+        stroke: var(--arrow-not-solution);
     }
     .outside {
-        stroke: rgb(250, 250, 250);
+        stroke: var(--arrow-outside);
     }
 
     .wall {
         fill: none;
-        stroke: rgba(250, 235, 190, 0);
+        stroke: rgba(0, 0, 0, 0);
         stroke-width: 15;
         stroke-linecap: square;
     }
     .isSolidWall {
-        stroke: rgb(50, 0, 50);
+        stroke: var(--house-wall);
     }
 
     .houseArea {
@@ -263,14 +263,14 @@ export default {
         cursor: pointer;
     }
     .houseArea:hover {
-        fill: rgba(250, 230, 0, 0.3);
-        stroke: rgba(250, 230, 0, 0.7);
+        fill: var(--house-area-hover-background);
+        stroke: var(--house-area-hover-border);
         stroke-width: 5;
         stroke-dasharray: 15;
     }
     .selectedHouse {
-        fill: rgba(250, 230, 0, 0.2);
-        stroke: rgba(250, 230, 0, 0.8);
+        fill: var(--house-selected-background);
+        stroke: var(--house-selected-border);
         stroke-width: 5;
         stroke-dasharray: 15;
     }

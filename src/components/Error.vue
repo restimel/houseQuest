@@ -17,7 +17,7 @@ export default {
 
 <style scoped>
 .error {
-    background-color: rgba(255, 190, 190, 0.95);
+    background-color: var(--error-background);
     text-align: center;
 }
 </style>

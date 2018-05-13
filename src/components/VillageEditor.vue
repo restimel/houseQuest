@@ -162,14 +162,14 @@ svg {
     grid-area: svg;
 }
 aside {
-    border-left: 5px solid rgb(50, 0, 50);
-    border-top: 1px solid rgb(50, 0, 50);
+    border-left: var(--aside-left-border);
+    border-top: var(--aside-top-border);
     padding: 1em;
     overflow: auto;
 }
 .controls {
     grid-area: controls;
-    border-top: 1px solid rgb(50, 0, 50);
+    border-top: var(--aside-top-border);
     padding: 5px;
     padding-bottom: 0;
 }

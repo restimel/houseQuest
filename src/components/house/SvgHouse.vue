@@ -8,7 +8,7 @@
     </defs>
     <g>
         <rect
-            class="houseWall"
+            class="house"
             x="0"
             y="0"
             :width="width"
@@ -102,27 +102,27 @@ export default {
 </script>
 
 <style scoped>
-    .houseWall {
-        fill: rgb(250, 235, 190);
-        stroke: rgb(150, 150, 150);
+    .house {
+        fill: var(--house-background);
+        stroke: var(--house-border);
         stroke-width: 2px;
     }
 
     .wall {
         fill: none;
-        stroke: rgba(250, 235, 190, 0);
+        stroke: rgba(0, 0, 0, 0);
         stroke-width: 15;
         stroke-linecap: square;
         cursor: pointer;
     }
     .wall:hover {
-        stroke: rgb(230, 210, 70);
+        stroke: var(--house-no-wall-hover);
     }
 
     .isSolidWall {
-        stroke: rgb(50, 0, 50);
+        stroke: var(--house-wall);
     }
     .isSolidWall:hover {
-        stroke: rgb(200, 180, 0);
+        stroke: var(--house-wall-hover);
     }
 </style>
