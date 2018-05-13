@@ -47,6 +47,7 @@
                     :class="{dialogFieldError: !village.name}"
                     placeholder="Name of the village"
                     v-model="village.name"
+                    @keyup.prevent.stop.enter="checkSave"
                 >
                 <div v-show="isNameUsed"
                     class="dialogWarn"
@@ -114,7 +115,7 @@ export default {
             this.askDialog = false;
         },
         selectHouse: function(house, idx) {
-            if (this.selectedHouse.house === house) {
+            if (this.selectedHouse.idx === idx) {
                 const [name, orientation] = house.split('§');
                 const newOrientation = orientations[(orientations.indexOf(orientation) + 1)%orientations.length];
                 this.changeHouse(name + '§' + newOrientation);

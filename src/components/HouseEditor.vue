@@ -43,6 +43,7 @@
                     :class="{dialogFieldError: !house.name}"
                     placeholder="Name of the house"
                     v-model="house.name"
+                    @keyup.prevent.stop.enter="checkSave"
                 >
                 <div v-show="isNameUsed"
                     class="dialogWarn"
