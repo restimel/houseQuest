@@ -220,34 +220,101 @@ function analyze({maze, starts, ends}) {
         return shortestPathLength;
     }
 
+    function computeOneMovement(x, y, pposition, isComplex, isOpposite, data) {
+        const info = getInfo(x, y);
+        let dir = convertPosition[info.orientation];
+        let direction = getDirection[dir];
+        const nposition = pposition.slice();
+        const hard = (isComplex ? 1 : 0) + data.hard;
+
+        if (!isOpposite) {
+            nposition[direction] = dir;
+        }
+
+        if (isComplex || isOpposite) {
+            direction = (direction + 1) % 2;
+            nposition[direction] = convertPosition['-' + nposition[direction]];
+            if (isComplex) {
+                dir = nposition.join('');
+            } else {
+                dir = nposition[direction];
+            }
+        }
+
+        let [X, Y, c] = move(x, y, nposition, direction);
+        c = (c > 1 ? c - 1 : 0 ) + data.complex;
+        return [X, Y, c, hard, nposition, data.mvt.concat(dir), getId(X, Y)];
+    }
+
     function computeMovements(x, y) {
+        function computeNextMovement(x, y, position) {
+            let r;
+            const initData = {
+                complex: 0,
+                hard: 0,
+                mvt: [],
+            };
+            const nextMoves = [
+                [x, y, position, false, false, initData],
+            ];
+            let index = 0;
+            const currentDist = getInfo(x, y).dist;
+
+            do {
+                const currentMove = nextMoves[index++];
+                r = computeOneMovement(...currentMove);
+
+                const id = r[6];
+                if (!visited.has(id)) {
+                    visited.add(id);
+
+                    const [X, Y, c, h, nposition, dir] = r;
+                    if (index > 50 || (shortestPath.has(id) || endCells.has(id)) && getInfo(X, Y).dist > currentDist) {
+                        // good! we have found a path going to the end
+                        break;
+                    }
+
+                    const data = {
+                        complex: c,
+                        hard: h,
+                        mvt: dir,
+                    };
+
+                    const [ox, oy, oposition,,,oData] = currentMove;
+                    nextMoves.push(
+                        [ox, oy, oposition, false, true, oData],
+                        [X, Y, nposition, false, false, data],
+                        [ox, oy, oposition, true, false, oData],
+                    );
+                }
+            } while(index < nextMoves.length && index < 50);
+            if ( index > 1 && index === nextMoves.length || index > 50) {
+                r[5].push('?');
+            }
+            return r;
+        }
+
         const visited = new Set();
         const movements = [];
-        let id;
         let complexity = 0;
+        let hard = 0;
         const cell = getCell(x, y);
         let position = [
             cell.d ? 'u' : 'd',
             cell.l ? 'r' : 'l'
         ];
+        let id;
+        let dbg = 0;
         do {
-            const info = getInfo(x, y);
-            const dir = convertPosition[info.orientation];
-            const direction = getDirection[dir];
-            let c;
-            movements.push(dir);
-            position[direction] = dir;
-            [x, y, c] = move(x, y, position, direction);
+            const r = computeNextMovement(x, y, position);
+            let dir, c, h;
+            [x, y, c, h, position, dir, id] = r;
+            movements.push(...dir);
             complexity += c;
-            id = getId(x, y);
-            if (visited.has(id)) {
-                //TODO complex movement
-                console.log('complex movement');
-                break;
-            }
-            visited.add(id);
-        } while(!endCells.has(id));
-        return [movements, complexity];
+            hard += h;
+        } while (!endCells.has(id) && dbg++ < 200);
+        if (dbg >= 199) console.log('not correct... :(');
+        return [movements, complexity, hard];
     }
     function addOutside(kind, defaultDist) {
         kind.forEach(([x, y], id) => {
@@ -336,10 +403,11 @@ function analyze({maze, starts, ends}) {
     /* compute movements */
     let movements = [];
     let complexMovements = 0;
+    let hardMovements = 0;
     if (isFinite(shortestPathLength)) {
         startCells.forEach(([x, y], id) => {
             if (shortestPath.has(id)) {
-                [movements, complexMovements] = computeMovements(x, y);
+                [movements, complexMovements, hardMovements] = computeMovements(x, y);
             }
         });
     }
@@ -353,5 +421,6 @@ function analyze({maze, starts, ends}) {
         accessible: Array.from(accessible.keys()),
         movements: movements,
         complexMovements: complexMovements,
+        hardMovements: hardMovements,
     };
 }

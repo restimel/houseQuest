@@ -19,6 +19,8 @@ const Village = Vue.component('Village', {
     },
     methods: {
         get: async function(name) {
+            this.name = name;
+            this.analyzeResult = {};
             let village = await store.village.get(name);
             if (!village) {
                 village = {

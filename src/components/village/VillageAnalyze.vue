@@ -65,6 +65,14 @@
                     {{result.complexMovements}}
                 </span>
             </div>
+            <div class="item"
+                title="Number of movements where it is quite hard to do (such as diagonal move)."
+            >
+                Number of hard movements:
+                <span class="computed">
+                    {{result.hardMovements}}
+                </span>
+            </div>
 
             <details class="item movements">
                 <summary>
@@ -101,10 +109,11 @@ export default {
     data: function() {
         return {
             weight: {
-                nbCellAccessible: 100,
-                nbShortPath: 100,
-                nbMovements: 100,
-                nbComplexMove: 50,
+                nbCellAccessible: 10,
+                nbShortPath: 10,
+                nbMovements: 10,
+                nbComplexMove: 5,
+                nbHardMove: 20,
             },
         };
     },
@@ -144,16 +153,18 @@ export default {
             const nbShtPath = 1 * weight.nbShortPath;
             const nbMovements = 1 * weight.nbMovements;
             const nbComplexMove = 1 * weight.nbComplexMove;
-            return nbCell + nbShtPath + nbMovements + nbComplexMove;
+            const nbHardMove = 1 * weight.nbHardMove;
+            return nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
         },
         difficulty: function() {
-            const fSx = x => (1 - this.sizeX / (2 * (x + this.sizeX)));
+            const fSx = (x, T, I) => (1 - T / (I * x + T));
             const weight = this.weight;
             const nbCell = (this.result.nbCellAccessible / this.nbMaxCells) * weight.nbCellAccessible;
             const nbShtPath = (this.result.nbShortestPath / this.nbMaxCells) * weight.nbShortPath;
             const nbMovements = (this.nbMovements / (this.nbMaxCells - confVillage.sizeX)) * weight.nbMovements;
-            const nbComplexMove = fSx(this.result.complexMovements) * weight.nbComplexMove;
-            return nbCell + nbShtPath + nbMovements + nbComplexMove;
+            const nbComplexMove = fSx(this.result.complexMovements, this.sizeX, 6) * weight.nbComplexMove;
+            const nbHardMove = fSx(this.result.hardMovements, 9, 3) * weight.nbHardMove;
+            return nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
         },
         difficultyPercent: function() {
             const percent = Math.round(this.difficulty / this.difficultyMax * 10000) / 100;
