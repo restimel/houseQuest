@@ -220,12 +220,12 @@ function analyze({maze, starts, ends}) {
         return shortestPathLength;
     }
 
-    function computeOneMovement(x, y, pposition, isComplex, isOpposite, data) {
+    function computeOneMovement(x, y, pposition, isComplex, isOpposite) {
         const info = getInfo(x, y);
         let dir = convertPosition[info.orientation];
         let direction = getDirection[dir];
         const nposition = pposition.slice();
-        const hard = (isComplex ? 1 : 0) + data.hard;
+        const hard = (isComplex ? 1 : 0);
 
         if (!isOpposite) {
             nposition[direction] = dir;
@@ -242,60 +242,26 @@ function analyze({maze, starts, ends}) {
         }
 
         let [X, Y, c] = move(x, y, nposition, direction);
-        c = (c > 1 ? c - 1 : 0 ) + data.complex;
-        return [X, Y, c, hard, nposition, data.mvt.concat(dir), getId(X, Y)];
+        c = (c > 1 ? c - 1 : 0 );
+        return [X, Y, c, hard, nposition, dir, getId(X, Y)];
     }
 
-    function computeMovements(x, y) {
-        function computeNextMovement(x, y, position) {
-            let r;
-            const initData = {
-                complex: 0,
-                hard: 0,
-                mvt: [],
+    function computeMovements(x, y) { //TODO all startCells
+        //TODO  Astar();
+        function buildState([x, y, complex, hard, position, mvt, id], cost) {
+            return {
+                id: id + '-' + position.join(','),
+                cid: id,
+                x: x,
+                y: y,
+                position: position,
+                mvt: mvt,
+                cost: cost,
+                complex: complex,
+                hard: hard,
             };
-            const nextMoves = [
-                [x, y, position, false, false, initData],
-            ];
-            let index = 0;
-            const currentDist = getInfo(x, y).dist;
-
-            do {
-                const currentMove = nextMoves[index++];
-                r = computeOneMovement(...currentMove);
-
-                const id = r[6];
-                if (!visited.has(id)) {
-                    visited.add(id);
-
-                    const [X, Y, c, h, nposition, dir] = r;
-                    if (index > 50 || (shortestPath.has(id) || endCells.has(id)) && getInfo(X, Y).dist > currentDist) {
-                        // good! we have found a path going to the end
-                        break;
-                    }
-
-                    const data = {
-                        complex: c,
-                        hard: h,
-                        mvt: dir,
-                    };
-
-                    const [ox, oy, oposition,,,oData] = currentMove;
-                    nextMoves.push(
-                        [ox, oy, oposition, false, true, oData],
-                        [X, Y, nposition, false, false, data],
-                        [ox, oy, oposition, true, false, oData],
-                    );
-                }
-            } while(index < nextMoves.length && index < 50);
-            if ( index > 1 && index === nextMoves.length || index > 50) {
-                r[5].push('?');
-            }
-            return r;
         }
 
-        const visited = new Set();
-        const movements = [];
         let complexity = 0;
         let hard = 0;
         const cell = getCell(x, y);
@@ -303,19 +269,32 @@ function analyze({maze, starts, ends}) {
             cell.d ? 'u' : 'd',
             cell.l ? 'r' : 'l'
         ];
-        let id;
-        let dbg = 0;
-        do {
-            const r = computeNextMovement(x, y, position);
-            let dir, c, h;
-            [x, y, c, h, position, dir, id] = r;
-            movements.push(...dir);
-            complexity += c;
-            hard += h;
-        } while (!endCells.has(id) && dbg++ < 200);
-        if (dbg >= 199) console.log('not correct... :(');
-        return [movements, complexity, hard];
+        const initValues = [buildState([x, y, 0, 0, position, '', getId(x, y)], 0)];
+        const checkEnd = (value) => endCells.has(value.cid);
+        const computeNext = (value) => {
+            const {x, y, position} = value;
+            const mvtNormal = computeOneMovement(x, y, position, false, false);
+            const mvtOpposite = computeOneMovement(x, y, position, false, true);
+            const mvtComplex = computeOneMovement(x, y, position, true, false);
+
+            return [
+                buildState(mvtNormal, 1),
+                buildState(mvtOpposite, 1),
+                buildState(mvtComplex, 10),
+                // magic
+            ];
+        };
+        var p1 = performance.now();
+        const result = Astar({
+            initValues,
+            computeNext,
+            checkEnd,
+        })
+        console.log('Aetoile', performance.now() -p1);
+        console.log('Aetoile result', result);
+        return result;
     }
+
     function addOutside(kind, defaultDist) {
         kind.forEach(([x, y], id) => {
             const maze = Object.assign({}, emptyCell);
@@ -423,4 +402,78 @@ function analyze({maze, starts, ends}) {
         complexMovements: complexMovements,
         hardMovements: hardMovements,
     };
+}
+
+
+function Astar({
+    initValues,
+    computeNext,
+    checkEnd,
+}) {
+    const done = new Map();
+    let result;
+    let todo = initValues.map(v => ({
+        v: v,
+        id: v.id,
+        d: 0,
+        dh: v.cost,
+        parent: null,
+    }));
+
+    function sortValues(v1, v2) {
+        return v2.dh - v1.dh || v2.d - v1.d;
+    }
+    function hasValues(v) {
+        const id = v.id;
+        return done.has(id) || todo.some(i => i.id === id);
+    }
+
+    do {
+        todo.sort(sortValues);
+        const val = todo.pop();
+        done.set(val.id, val);
+        if (checkEnd(val.v)) {
+            result = val;
+            break;
+        }
+        const nextD = val.d + val.v.cost;
+        const next = computeNext(val.v);
+        next.forEach(n => {
+            if (done.has(n.id)) {
+                return;
+            }
+            let oN = todo.find(i => i.id === n.id);
+            if (oN) {
+                if (oN.dh > nextD + n.cost) {
+                    // update
+                    oN.v = n;
+                    oN.d = nextD;
+                    oN.dh = nextD + n.cost;
+                    oN.parent = val.id;
+                }
+                return;
+            }
+            // add
+            todo.push({
+                v: n,
+                id: n.id,
+                d: nextD,
+                dh: nextD + n.cost,
+                parent: val.id,
+            });
+        });
+    } while (todo.length);
+
+    const list = [];
+    const mvt = [];
+    let complexity = 0;
+    let hard = 0;
+    while (result) {
+        list.push(result.v);
+        mvt.push(result.v.mvt);
+        complexity += result.v.complex;
+        hard += result.v.hard;
+        result = done.get(result.parent);
+    }
+    return [mvt.reverse(), complexity, hard, list.reverse()]
 }
