@@ -9,10 +9,11 @@
                 title="difficulty of this maze"
                 min="0"
                 optimum="0"
-                :max="difficultyMax"
-                :value="difficulty"
-                :low="difficultyMax * 0.33"
-                :high="difficultyMax * 0.66"
+                max="100"
+                :value="difficultyEstimation"
+                low="35"
+                high="70"
+                @click="showWeight=true;"
             >
                 difficulty of this maze
             </meter>
@@ -83,6 +84,12 @@
                 </p>
             </details>
         </template>
+        <Weight
+            :show="showWeight"
+            :weight="weight"
+            @input="changeWeight"
+            @confirm="showWeight=false;"
+        />
     </template>
     <div v-else
         class="defaultMsg"
@@ -93,6 +100,7 @@
 </template>
 
 <script>
+import Weight from '@/components/village/DifficultyWeight';
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
 
@@ -109,12 +117,13 @@ export default {
     data: function() {
         return {
             weight: {
-                nbCellAccessible: 10,
+                nbCellAccessible: 5,
                 nbShortPath: 10,
                 nbMovements: 10,
-                nbComplexMove: 5,
-                nbHardMove: 20,
+                nbComplexMove: 1,
+                nbHardMove: 40,
             },
+            showWeight: false,
         };
     },
     computed: {
@@ -135,16 +144,26 @@ export default {
         },
         readableMovements: function() {
             const convert = {
+                '': ' ',
+                '-': ' ',
                 'u': '↑',
                 'd': '↓',
                 'l': '←',
                 'r': '→',
+                'ul': '↖',
+                'ur': '↗',
+                'dr': '↘',
+                'dl': '↙',
                 '-d': '↑',
                 '-u': '↓',
                 '-r': '←',
                 '-l': '→',
+                '-dr': '↖',
+                '-dl': '↗',
+                '-ul': '↘',
+                '-ur': '↙',
             };
-            return this.result.movements.map(d => convert[d]).join(' ');
+            return this.result.movements.map(d => convert[d] || '?').join(' ');
         },
         difficultyMax: function() {
             const weight = this.weight;
@@ -153,22 +172,35 @@ export default {
             const nbMovements = 1 * weight.nbMovements;
             const nbComplexMove = 1 * weight.nbComplexMove;
             const nbHardMove = 1 * weight.nbHardMove;
-            return nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
+            return 0.01 + nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
         },
         difficulty: function() {
-            const fSx = (x, T, I) => (1 - T / (I * x + T));
             const weight = this.weight;
             const nbCell = (this.result.nbCellAccessible / this.nbMaxCells) * weight.nbCellAccessible;
             const nbShtPath = (this.result.nbShortestPath / this.nbMaxCells) * weight.nbShortPath;
             const nbMovements = (this.nbMovements / (this.nbMaxCells - confVillage.sizeX)) * weight.nbMovements;
-            const nbComplexMove = fSx(this.result.complexMovements, this.sizeX, 6) * weight.nbComplexMove;
-            const nbHardMove = fSx(this.result.hardMovements, 9, 3) * weight.nbHardMove;
-            return nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
+            const nbComplexMove = this.asymptotic(this.result.complexMovements, this.sizeX, 6) * weight.nbComplexMove;
+            const nbHardMove = this.asymptotic(this.result.hardMovements, 9, 3) * weight.nbHardMove;
+            return 0.01 + nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
+        },
+        difficultyEstimation: function() {
+            const value = this.asymptotic(this.difficulty, this.difficultyMax, 5);
+            return Math.round(value * 10000) / 100;
         },
         difficultyPercent: function() {
-            const percent = Math.round(this.difficulty / this.difficultyMax * 10000) / 100;
-            return percent + '%';
+            return this.difficultyEstimation + '%';
         },
+    },
+    methods: {
+        asymptotic: function (x, Tmax = 100, Quickness = 1) {
+            return (1 - Tmax / ( Quickness * x + Tmax));
+        },
+        changeWeight: function(value) {
+            this.weight = value;
+        }
+    },
+    components: {
+        Weight: Weight,
     },
 };
 </script>
