@@ -112,7 +112,6 @@ export default {
         },
     },
     created: function() {
-        console.log('created', this.house);
         if (!this.house.name) {
             this.init();
         }

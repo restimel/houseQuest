@@ -16,14 +16,16 @@
             <span>{{value}}</span>
         </label>
     </div>
-    <div class="controls">
+    <div class="controls"
+        v-keys:d.escape.enter="confirm"
+    >
         <button
             @click="$emit('reset')"
         >
             Reset
         </button>
         <button
-            @click="$emit('confirm')"
+            @click="confirm"
         >
             Ok
         </button>
@@ -53,6 +55,9 @@ export default {
         changeWeight: function(name, evt) {
             this.weightValues[name] = +evt.currentTarget.value;
             this.$emit('input', this.weightValues);
+        },
+        confirm: function() {
+            this.$emit('confirm');
         },
     },
     watch: {

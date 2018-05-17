@@ -4,14 +4,17 @@
     <div class="body">
         <slot />
     </div>
-    <div class="controls">
+    <div class="controls"
+        v-keys:allfocus.escape="close"
+        v-keys:allfocus.enter="confirm"
+    >
         <button
-            @click="$emit('close')"
+            @click="close"
         >
             {{cancelButton}}
         </button>
         <button
-            @click="$emit('confirm')"
+            @click="confirm"
         >
             {{saveButton}}
         </button>
@@ -38,6 +41,14 @@ export default {
     data: function() {
         return {
         };
+    },
+    methods: {
+        close: function() {
+            this.$emit('close')
+        },
+        confirm: function() {
+            this.$emit('confirm')
+        },
     },
 };
 </script>
