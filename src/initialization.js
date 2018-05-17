@@ -22,9 +22,23 @@ async function initVillages() {
     }
 }
 
+async function initConfiguration() {
+    store.configuration.set({
+        type: 'defaultWeight',
+        weight: {
+            nbCellAccessible: 5,
+            nbShortPath: 10,
+            nbMovements: 10,
+            nbComplexMove: 1,
+            nbHardMove: 40,
+        },
+    });
+}
+
 function init() {
     initVillages();
     initHouses();
+    initConfiguration();
 }
 
 export default init;

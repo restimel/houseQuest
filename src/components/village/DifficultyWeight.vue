@@ -17,11 +17,11 @@
         </label>
     </div>
     <div class="controls">
-        <!-- <button
-            @click="reset"
+        <button
+            @click="$emit('reset')"
         >
             Reset
-        </button> -->
+        </button>
         <button
             @click="$emit('confirm')"
         >
@@ -50,9 +50,6 @@ export default {
         };
     },
     methods: {
-        reset: function() {
-            console.log('TODO');
-        },
         changeWeight: function(name, evt) {
             this.weightValues[name] = +evt.currentTarget.value;
             this.$emit('input', this.weightValues);

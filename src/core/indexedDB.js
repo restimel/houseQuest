@@ -2,7 +2,7 @@ const store = {};
 
 (function() {
 
-const dbVersion = 1;
+const dbVersion = 2;
 const dbName = 'houseMaze';
 // const tableVillage = 'village';
 const tables = [{
@@ -24,6 +24,17 @@ const tables = [{
         name: 'name',
         keyPath: 'name',
         addedInVersion: 1,
+        unique: true,
+        multiEntry: false,
+    }],
+}, {
+    name: 'configuration',
+    keyPath: 'type',
+    addedInVersion: 2,
+    indexes: [{
+        name: 'type',
+        keyPath: 'type',
+        addedInVersion: 2,
         unique: true,
         multiEntry: false,
     }],

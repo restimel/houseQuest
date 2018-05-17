@@ -4,9 +4,9 @@
         <header>
             Village Analysis
         </header>
-        <div v-show="isResolvable">
+        <div v-show="isResolvable" class="information difficulty">
             <meter
-                title="difficulty of this maze"
+                title="Estimation of this maze's difficulty"
                 min="0"
                 optimum="0"
                 max="100"
@@ -15,18 +15,18 @@
                 high="70"
                 @click="showWeight=true;"
             >
-                difficulty of this maze
+                Difficulty of this maze
             </meter>
             <span class="percentInfo">
                 {{difficultyPercent}}
             </span>
         </div>
-        <div v-if="!isResolvable" class="item notResolvable"
+        <div v-if="!isResolvable" class="information notResolvable"
             title="It is not possible to find a path from start to end"
         >
             Not resolvable!
         </div>
-        <div v-else class="item resolvable"
+        <div v-else class="information resolvable"
             title="It is possible to find at least a path from start to end"
         >
             Is resolvable
@@ -89,6 +89,7 @@
             :weight="weight"
             @input="changeWeight"
             @confirm="showWeight=false;"
+            @reset="getFromStore(true)"
         />
     </template>
     <div v-else
@@ -101,6 +102,7 @@
 
 <script>
 import Weight from '@/components/village/DifficultyWeight';
+import store from '@/core/indexedDB';
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
 
@@ -115,14 +117,9 @@ export default {
         },
     },
     data: function() {
+        this.getFromStore();
         return {
-            weight: {
-                nbCellAccessible: 5,
-                nbShortPath: 10,
-                nbMovements: 10,
-                nbComplexMove: 1,
-                nbHardMove: 40,
-            },
+            weight: {},
             showWeight: false,
         };
     },
@@ -197,7 +194,21 @@ export default {
         },
         changeWeight: function(value) {
             this.weight = value;
-        }
+            store.configuration.set('weight', {
+                type: 'weight',
+                weight: value
+            });
+        },
+        getFromStore: async function(forceReset) {
+            let data;
+            if (!forceReset) {
+                data = await store.configuration.get('weight');
+            }
+            if (!data) {
+                data = await store.configuration.get('defaultWeight') || {};
+            }
+            this.weight = data.weight;
+        },
     },
     components: {
         Weight: Weight,
@@ -214,6 +225,18 @@ header {
 }
 .item {
     text-align: left;
+}
+.information {
+    text-align: center;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+}
+.difficulty {
+    cursor: pointer;
+}
+meter {
+    width: 75%;
+    height: 1.4em;
 }
 .computed {
     font-weight: bold;
