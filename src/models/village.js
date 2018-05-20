@@ -33,10 +33,13 @@ const Village = Vue.component('Village', {
                     name = this.conf.villageName;
                 }
             }
+<<<<<<< HEAD
             if (!name) {
                 this.clear();
                 return;
             }
+=======
+>>>>>>> memorize previous maze
             this.name = name;
             this.analyzeResult = {};
             let village = await store.village.get(name);
@@ -66,6 +69,7 @@ const Village = Vue.component('Village', {
                 createDate: this.createDate,
             });
 
+<<<<<<< HEAD
             p.then(() => this.sync());
 
             return p;
@@ -91,6 +95,14 @@ const Village = Vue.component('Village', {
             for (let x = 0; x < length; x++) {
                 this.houses.push('_empty_§UP');
             }
+=======
+            this.sync();
+        },
+        sync: function() {
+            if (this.synchronized && this.name) {
+                this.conf.villageName = this.name;
+            }
+>>>>>>> memorize previous maze
         },
         analyze: function(result) {
             console.log(performance.now() - self.dbg);
@@ -119,12 +131,17 @@ const Village = Vue.component('Village', {
         },
         _initValue: async function() {
             if (this.synchronized) {
+<<<<<<< HEAD
                 if (!this.name) {
                     if (this.conf.villageName) {
                         this.get(this.conf.villageName);
                     } else {
                         this.clear();
                     }
+=======
+                if (!this.name && this.conf.villageName) {
+                    this.get(this.conf.villageName);
+>>>>>>> memorize previous maze
                 }
             }
         },
