@@ -2,11 +2,18 @@ import Vue from 'vue';
 import store from '@/core/indexedDB';
 import worker from '@/core/worker';
 import House from '@/models/house';
+import conf from '@/models/configurations';
 
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
 
 const Village = Vue.component('Village', {
+    props: {
+        synchronized: {
+            type: Boolean,
+            default: false,
+        },
+    },
     data: function() {
         return {
             name: '',
@@ -15,10 +22,17 @@ const Village = Vue.component('Village', {
             updateDate: 0,
             createDate: 0,
             analyzeResult: {},
+            conf: conf,
         };
     },
     methods: {
-        get: async function(name) {
+        get: async function(name, asDefault = false) {
+            if (asDefault) {
+                await this.conf.isLoaded;
+                if (this.conf.villageName) {
+                    name = this.conf.villageName;
+                }
+            }
             this.name = name;
             this.analyzeResult = {};
             let village = await store.village.get(name);
@@ -34,6 +48,10 @@ const Village = Vue.component('Village', {
             this.houses = village.houses;
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
+
+            if (!asDefault) {
+                this.sync();
+            }
         },
         save: function() {
             return store.village.set({
@@ -43,6 +61,13 @@ const Village = Vue.component('Village', {
                 updateDate: this.updateDate,
                 createDate: this.createDate,
             });
+
+            this.sync();
+        },
+        sync: function() {
+            if (this.synchronized && this.name) {
+                this.conf.villageName = this.name;
+            }
         },
         analyze: function(result) {
             console.log(performance.now() - self.dbg);
@@ -68,6 +93,13 @@ const Village = Vue.component('Village', {
             }
 
             this.maze = maze;
+        },
+        _initValue: async function() {
+            if (this.synchronized) {
+                if (!this.name && this.conf.villageName) {
+                    this.get(this.conf.villageName);
+                }
+            }
         },
     },
     watch: {

@@ -25,7 +25,7 @@ export default {
                 name: 'Author',
                 value: 'Benoît Mariat',
             }, {
-                name: 'Origina idea of the game',
+                name: 'Original idea of the game',
                 value: 'Romain-Guirec Piotte',
             }, {
                 name: 'Date',
