@@ -9,6 +9,9 @@
     <router-link to="composition" class="link">
         Composition
     </router-link>
+    <router-link to="about" class="link">
+        About
+    </router-link>
 </nav>
 </template>
 
@@ -36,6 +39,7 @@ export default {
 .router-link-exact-active {
     background-color: var(--active-link);
     color: var(--menu-background);
+    cursor: default;
 }
 .router-link-exact-active:hover {
     color: var(--menu-background);

@@ -1,5 +1,5 @@
 <template>
-<svg width="80%" height="80%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
+<svg width="98%" height="98%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
     <defs>
         <path id="wallLeft" d="M0,0 v100" />
         <path id="wallUp" d="M0,0 h100" />

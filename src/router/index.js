@@ -3,6 +3,7 @@ import Router from 'vue-router';
 import Main from '@/components/Main.vue';
 import VillageEditor from '@/components/VillageEditor.vue';
 import HouseEditor from '@/components/HouseEditor.vue';
+import ConfigAbout from '@/components/ConfigAbout.vue';
 import ErrorPage from '@/components/Error.vue';
 
 Vue.use(Router);
@@ -23,6 +24,11 @@ export default new Router({
             path: '/house',
             name: 'House',
             component: HouseEditor,
+        },
+        {
+            path: '/about',
+            name: 'ConfigAbout',
+            component: ConfigAbout,
         },
         {
             path: '*',

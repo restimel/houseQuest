@@ -1,15 +1,22 @@
 <template>
-    <div id="app">
+    <div id="app" :class="conf.theme">
         <Menu />
         <router-view class="page-view" />
     </div>
 </template>
 
 <script>
+import Vue from 'vue';
 import Menu from '@/components/Menu';
+import conf from '@/models/configurations';
 
 export default {
     name: 'App',
+    data: function() {
+        return {
+            conf: conf,
+        };
+    },
     components: {
         Menu,
     },
@@ -32,6 +39,7 @@ body {
 .page-view {
     padding: 1em;
     background-color: var(--page-background);
+    color: var(--text-color);
     overflow: auto;
     position: absolute;
     top: 50px;
@@ -48,8 +56,8 @@ summary {
 :root {
     --text-color: rgb(0, 0, 0);
     --warning-text: rgb(150, 120, 0);
-    --menu-background: rgb(50, 0, 50);
     --error-background: rgb(255, 200, 200);
+    --menu-background: rgb(50, 0, 50);
     --page-background: rgb(235, 230, 255);
     --village-background: rgb(250, 235, 190);
     --house-background: var(--village-background);
@@ -73,6 +81,40 @@ summary {
     --house-selected-border: rgba(250, 230, 0, 0.8);
     --information-not-resolvable: rgb(255, 0, 0);
     --information-resolvable: rgb(0, 120, 0);
+
+    --aside-left-border: 5px solid var(--menu-background);
+    --aside-top-border: 1px solid var(--menu-background);
+}
+</style>
+<style>
+.blueprint {
+    --text-color: rgb(255, 255, 255);
+    /* --warning-text: rgb(150, 120, 0); */
+    /* --error-background: rgb(255, 200, 200); */
+    --menu-background: rgb(70, 70, 200);
+    --page-background: rgb(0, 0, 120);
+    --village-background: rgb(0, 0, 250);
+    --house-background: var(--village-background);
+    /* --start-background: rgb(150, 250, 150);
+    --start-border: rgb(0, 150, 0);
+    --end-background: rgb(250, 150, 150);
+    --end-border: rgb(250, 0, 0); */
+    --active-link: rgb(190, 170, 30);
+    --menu-text-color: var(--text-color);
+    --village-border: rgb(250, 250, 250);
+    --house-border: var(--village-border);
+    --house-no-wall-hover: rgb(200, 180, 20);
+    --house-wall: rgb(250, 250, 250);
+    --house-wall-hover: rgb(230, 210, 70);
+    /* --arrow-solution: rgb(120, 250, 120);
+    --arrow-not-solution: rgb(240, 130, 100);
+    --arrow-outside: rgb(250, 250, 250); */
+    --house-area-hover-background: rgba(250, 250, 200, 0.5);
+    --house-area-hover-border: rgba(250, 250, 0, 0.9);
+    --house-selected-background: rgba(250, 250, 200, 0.3);
+    --house-selected-border: rgba(250, 250, 0, 0.8);
+    /* --information-not-resolvable: rgb(255, 0, 0); */
+    /* --information-resolvable: rgb(0, 120, 0); */
 
     --aside-left-border: 5px solid var(--menu-background);
     --aside-top-border: 1px solid var(--menu-background);

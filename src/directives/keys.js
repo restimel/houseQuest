@@ -41,7 +41,8 @@ const keys = Vue.directive('keys', {
 
         return (evt) => {
             const keyCode = evt.keyCode;
-            const key = evt.key.toLowerCase();
+            const eKey = evt.key;
+            const key = eKey && eKey.toLowerCase();
 
             // check depending on context
             if (!notFocus) {

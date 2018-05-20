@@ -1,7 +1,7 @@
 <template>
-<svg width="95%" height="95%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
+<svg width="98%" height="98%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
     <defs>
-        <path id="arrow" class="arrow" d="M0,35 v-60 l-20,20 20,-20 20,20" />
+        <path id="arrow" class="arrow" d="M0,25 v-55 l-20,20 20,-20 20,20" />
         <path id="wallLeft" d="M0,0 v100" />
         <path id="wallUp" d="M0,0 h100" />
         <path id="wallRight" d="M100,0 v100" />
@@ -236,6 +236,8 @@ export default {
     .arrow {
         fill: none;
         stroke-width: 10px;
+        stroke-linecap: round;
+        stroke-linejoin:round;
     }
     .solution {
         stroke: var(--arrow-solution);
