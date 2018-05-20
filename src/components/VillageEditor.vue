@@ -74,10 +74,10 @@ const orientations = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
 export default {
     name: 'VillageEditor',
     data: function() {
-        this.refresh().then(() => this.load(this.villageList[0]));
+        this.refresh().then(() => this.load(this.villageList[0], true));
 
         return {
-            village: new Village(),
+            village: new Village({props: {synchronized: {default: true}}}),
             villageList: [],
             selection: '',
             askDialog: false,
@@ -93,10 +93,10 @@ export default {
         },
     },
     methods: {
-        load: async function(name) {
+        load: async function(name, asDefault) {
             const has = await store.village.has(name);
             if (has) {
-                this.village.get(name);
+                this.village.get(name, asDefault);
             }
         },
         refresh: async function() {

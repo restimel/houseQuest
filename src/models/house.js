@@ -1,10 +1,17 @@
 import Vue from 'vue';
 import store from '@/core/indexedDB';
+import conf from '@/models/configurations';
 
 import configuration from '@/configuration';
 const { house: confHouse } = configuration;
 
 const House = Vue.component('House', {
+    props: {
+        synchronized: {
+            type: Boolean,
+            default: false,
+        },
+    },
     data: function() {
         return {
             name: '',
@@ -12,6 +19,7 @@ const House = Vue.component('House', {
             updateDate: 0,
             createDate: 0,
             orientation: 'UP',
+            conf: conf,
         };
     },
     methods: {
@@ -31,7 +39,13 @@ const House = Vue.component('House', {
             }
             this.maze = maze;
         },
-        get: async function(name) {
+        get: async function(name, asDefault = false) {
+            if (asDefault) {
+                await this.conf.isLoaded;
+                if (this.conf.houseName) {
+                    name = this.conf.houseName;
+                }
+            }
             if (name === '_empty_') {
                 this.name = '';
                 this.initMaze(true);
@@ -51,6 +65,10 @@ const House = Vue.component('House', {
             this.updateDate = house.updateDate;
             this.createDate = house.createDate;
 
+            if (!asDefault) {
+                this.sync();
+            }
+
             return this;
         },
         save: function() {
@@ -60,6 +78,13 @@ const House = Vue.component('House', {
                 updateDate: this.updateDate,
                 createDate: this.createDate,
             });
+
+            this.sync();
+        },
+        sync: function () {
+            if (this.synchronized && this.name && this.name !== '_empty_') {
+                this.conf.houseName = this.name;
+            }
         },
         getCell: function(x, y) {
             const [X, Y] = this._orientationXY(x, y);

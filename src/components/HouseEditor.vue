@@ -65,10 +65,10 @@ import AskDialog from '@/components/AskDialog';
 export default {
     name: 'HouseEditor',
     data: function() {
-        this.refresh().then(() => this.load(this.houseList[0]));
+        this.refresh().then(() => this.load(this.houseList[0], true));
 
         return {
-            house: new House(),
+            house: new House({props: {synchronized: {default: true}}}),
             houseList: [],
             selection: '',
             askDialog: false,
@@ -88,10 +88,10 @@ export default {
             this.house.name = '';
             this.house.orientation = 'UP';
         },
-        load: async function(name) {
+        load: async function(name, asDefault) {
             const has = await store.house.has(name);
             if (has) {
-                this.house.get(name);
+                this.house.get(name, asDefault);
             }
         },
         refresh: async function() {

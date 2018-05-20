@@ -3,9 +3,11 @@ import store from '@/core/indexedDB';
 
 const Configuration = Vue.component('Configuration', {
     data: function() {
-        store.configuration.getAll().then(this.load.bind(this));
         return {
             theme: 'default',
+            villageName: '',
+            houseName: '',
+            isLoaded: store.configuration.getAll().then(this.load.bind(this)),
         };
     },
     methods: {
@@ -20,6 +22,18 @@ const Configuration = Vue.component('Configuration', {
             store.configuration.set('theme', {
                 type: 'theme',
                 data: this.theme,
+            });
+        },
+        villageName: function () {
+            store.configuration.set('villageName', {
+                type: 'villageName',
+                data: this.villageName,
+            });
+        },
+        houseName: function () {
+            store.configuration.set('houseName', {
+                type: 'houseName',
+                data: this.houseName,
             });
         },
     },
