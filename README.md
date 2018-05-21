@@ -5,6 +5,10 @@ A solver and a maze maker for the houseQuest brain teaser game.
 
 This project is about to build a maze helper (for guessing difficulties of different maze) for the prototype game house-Quest.
 
+## Online test
+
+https://restimel.github.io/houseQuest/dist/index.html
+
 ## Build Setup
 
 ``` bash
