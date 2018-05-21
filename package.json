@@ -12,7 +12,7 @@
     "test": "npm run unit && npm run e2e",
     "lint": "eslint --ext .js,.vue src test/unit test/e2e/specs",
     "build": "node build/build.js",
-    "gh-pages": "git checkout gh-pages && git merge master && npm run build && git add dist/ && git commit --amend && git co -"
+    "gh-pages": "git checkout gh-pages && git merge master && npm run build && git add dist/* -f && git commit --amend && git co -"
   },
   "dependencies": {
     "npm": "^6.0.1",
