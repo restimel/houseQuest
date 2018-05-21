@@ -50,6 +50,9 @@ body {
 summary {
     cursor: pointer;
 }
+summary:focus {
+    outline: none;
+}
 </style>
 
 <style>

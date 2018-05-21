@@ -19,6 +19,7 @@ const Village = Vue.component('Village', {
             name: '',
             maze: [],
             houses: [],
+            infos: [],
             updateDate: 0,
             createDate: 0,
             analyzeResult: {},
@@ -46,6 +47,7 @@ const Village = Vue.component('Village', {
             }
             this.name = village.name;
             this.houses = village.houses;
+            this.infos = village.infos || [];
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
 
@@ -58,6 +60,7 @@ const Village = Vue.component('Village', {
                 name: this.name,
                 maze: this.maze,
                 houses: this.houses,
+                infos: this.infos,
                 updateDate: this.updateDate,
                 createDate: this.createDate,
             });
@@ -117,7 +120,8 @@ const Village = Vue.component('Village', {
                 for (let y = 0; y < confVillageSizeY; y++) {
                     const house = new House();
                     houseMaze[x][y] = house;
-                    const [houseName, orientation] = (houses[x * confVillageSizeX + y] || '').split('§');
+                    const cellHouse = houses[x * confVillageSizeX + y];
+                    const [houseName, orientation] = (cellHouse || '').split('§');
                     house.orientation = orientation;
                     promises.push(house.get(houseName));
                 }

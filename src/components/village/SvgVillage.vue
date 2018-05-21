@@ -47,7 +47,7 @@
             />
         </g>
 
-        <template v-if="village.maze[0]">
+        <template v-if="display==='maze' && village.maze[0]">
             <g v-for="(cellColumn, idx) of village.maze"
                 :key="'villageCellColumn-'+idx"
             >
@@ -59,6 +59,36 @@
                     <use :x="idx * size" :y="idy * size" href="#wallUp" class="wall" :class="{isSolidWall: !cell.u}" :rid="renderId" />
                     <use :x="idx * size" :y="idy * size" href="#wallDown" class="wall" :class="{isSolidWall: !cell.d}" :rid="renderId" />
                 </g>
+            </g>
+        </template>
+
+        <template v-if="display==='info'">
+            <g v-for="(cellHouse, idx) of village.houses"
+                :key="'villageHouseInfo-'+idx"
+            >
+                <rect
+                    class="houseInfoArea"
+                    :x="getHouseX(idx) * houseWidth"
+                    :y="getHouseY(idx) * houseHeight"
+                    :width="houseWidth"
+                    :height="houseHeight"
+                />
+                <text
+                    class="text-info"
+                >
+                    <tspan
+                        :x="(getHouseX(idx) + 0.5) * houseWidth"
+                        :y="(getHouseY(idx) + 0.45) * houseHeight"
+                    >
+                        {{getHouseInfo(idx)}}
+                    </tspan>
+                    <tspan
+                        :x="(getHouseX(idx) + 0.5) * houseWidth"
+                        :y="(getHouseY(idx) + 0.45) * houseHeight + 50"
+                    >
+                        {{getDirectionInfo(idx)}}
+                    </tspan>
+                </text>
             </g>
         </template>
 
@@ -124,6 +154,10 @@ export default {
                 return {};
             },
         },
+        display: {
+            type: String,
+            default: 'maze',
+        },
     },
     data: function() {
         return {
@@ -158,10 +192,10 @@ export default {
             return this.height + 2 * this.size;
         },
         houseWidth: function() {
-            return confHouse.sizeX * this.size
+            return confHouse.sizeX * this.size;
         },
         houseHeight: function() {
-            return confHouse.sizeY * this.size
+            return confHouse.sizeY * this.size;
         },
     },
     methods: {
@@ -176,6 +210,29 @@ export default {
         },
         getHouseY: function(idx) {
             return idx % confVillage.sizeX;
+        },
+        getHouseInfo: function(idx) {
+            const info = this.village.infos[idx] || {};
+            let text;
+            if (!info.houses || !info.houses.length) {
+                text = 'Default selection';
+            } else
+            if (info.houses.length === 1) {
+                text = `"${info.houses[0]}" only`;
+            } else {
+                text = `limited to ${info.houses.length} houses`;
+            }
+            return text;
+        },
+        getDirectionInfo: function(idx) {
+            const info = this.village.infos[idx] || {};
+            let text;
+            if (!info.directions || !info.directions.length) {
+                text = 'Default orientations';
+            } else {
+                text = info.directions.join(' ');
+            }
+            return text;
         },
         transformXYArrow: function(x, y, orientation) {
             let deg = 0;
@@ -259,6 +316,11 @@ export default {
         stroke: var(--house-wall);
     }
 
+    .houseInfoArea {
+        fill: none;
+        stroke: var(--house-wall);
+    }
+
     .houseArea {
         fill: rgba(0, 0, 0, 0);
         stroke: none;
@@ -275,5 +337,9 @@ export default {
         stroke: var(--house-selected-border);
         stroke-width: 5;
         stroke-dasharray: 15;
+    }
+    .text-info {
+        font-size: 30px;
+        text-anchor: middle;
     }
 </style>
