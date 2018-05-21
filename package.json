@@ -11,10 +11,11 @@
     "e2e": "node test/e2e/runner.js",
     "test": "npm run unit && npm run e2e",
     "lint": "eslint --ext .js,.vue src test/unit test/e2e/specs",
-    "build": "node build/build.js"
+    "build": "node build/build.js",
+    "gh-pages": "git checkout gh-pages && git merge master && npm run build && sed -i 's,/static/,./static/,g' dist/index.html && sed -i \"s,new Worker(,new Worker('./'+,g\" dist/static/js/*.js && git add dist/* -f && git commit --amend && git co -"
   },
   "dependencies": {
-    "npm": "^6.0.0",
+    "npm": "^6.0.1",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1"
   },
