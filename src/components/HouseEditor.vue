@@ -23,6 +23,12 @@
     </aside>
     <div class="controls">
         <button
+            :disabled="!title"
+            @click="checkRemove"
+        >
+            Remove
+        </button>
+        <button
             @click="init"
         >
             Reset
@@ -52,6 +58,17 @@
                 </div>
             </div>
         </AskDialog>
+        <AskDialog
+            title="Delete house"
+            :show="askDialogRemove"
+            saveButton="Delete"
+            @close="askDialogRemove=false"
+            @confirm="remove"
+        >
+            <div>
+                Do you want to delete house "{{title}}"?
+            </div>
+        </AskDialog>
     </div>
 </div>
 </template>
@@ -72,6 +89,7 @@ export default {
             houseList: [],
             selection: '',
             askDialog: false,
+            askDialogRemove: false,
         };
     },
     computed: {
@@ -109,6 +127,14 @@ export default {
             await this.house.save();
             this.refresh();
             this.askDialog = false;
+        },
+        checkRemove: function() {
+            this.askDialogRemove = true;
+        },
+        remove: async function() {
+            await this.house.delete();
+            this.refresh();
+            this.askDialogRemove = false;
         },
     },
     created: function() {

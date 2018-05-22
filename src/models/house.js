@@ -72,13 +72,21 @@ const House = Vue.component('House', {
             return this;
         },
         save: function() {
-            return store.house.set({
+            const p = store.house.set({
                 name: this.name || 'house1',
                 maze: this.maze,
                 updateDate: this.updateDate,
                 createDate: this.createDate,
             });
 
+            p.then(() => this.sync());
+            return p;
+        },
+        delete: async function() {
+            await store.village.delete(this.name);
+
+            this.name = '';
+            this.maze = [];
             this.sync();
         },
         sync: function () {
