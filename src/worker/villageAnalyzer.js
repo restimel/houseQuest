@@ -291,7 +291,6 @@ function analyze({maze, starts, ends}) {
             checkEnd,
         })
         console.log('Aetoile', performance.now() -p1);
-        console.log('Aetoile result', result);
         return result;
     }
 

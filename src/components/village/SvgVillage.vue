@@ -62,19 +62,6 @@
             </g>
         </template>
 
-        <template v-if="!readOnly">
-            <rect v-for="(cellHouse, idx) of village.houses"
-                :key="'villageHouse-'+idx"
-                class="houseArea"
-                :class="{selectedHouse: selected.idx === idx}"
-                :x="getHouseX(idx) * houseWidth"
-                :y="getHouseY(idx) * houseHeight"
-                :width="houseWidth"
-                :height="houseHeight"
-                @click="selectHouse(cellHouse, idx)"
-            />
-        </template>
-
         <template v-if="result.cells">
             <g v-for="(cellColumn, idx) of result.cells"
                 :key="'resultCellColumn-'+idx"
@@ -91,6 +78,19 @@
                     />
                 </g>
             </g>
+        </template>
+
+        <template v-if="!readOnly">
+            <rect v-for="(cellHouse, idx) of village.houses"
+                :key="'villageHouse-'+idx"
+                class="houseArea"
+                :class="{selectedHouse: selected.idx === idx}"
+                :x="getHouseX(idx) * houseWidth"
+                :y="getHouseY(idx) * houseHeight"
+                :width="houseWidth"
+                :height="houseHeight"
+                @click="selectHouse(cellHouse, idx)"
+            />
         </template>
     </g>
 </svg>
