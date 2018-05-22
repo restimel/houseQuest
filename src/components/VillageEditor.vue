@@ -114,10 +114,7 @@ export default {
     },
     methods: {
         load: async function(name, asDefault) {
-            const has = await store.village.has(name);
-            if (has) {
-                this.village.get(name, asDefault);
-            }
+            return this.village.get(name || '', asDefault);
         },
         refresh: async function() {
             const list = await store.village.getAll();
@@ -129,6 +126,7 @@ export default {
         remove: async function() {
             await this.village.delete();
             this.refresh();
+            this.selectedHouse = {};
             this.askDialogRemove = false;
         },
         save: function() {
@@ -187,7 +185,7 @@ header {
 .houseAction {
     grid-area: action;
 }
-.villageAnalysis {
+.villageAnalyze {
     grid-area: analyze;
 }
 h2 {

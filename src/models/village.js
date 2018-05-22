@@ -33,6 +33,10 @@ const Village = Vue.component('Village', {
                     name = this.conf.villageName;
                 }
             }
+            if (!name) {
+                this.clear();
+                return;
+            }
             this.name = name;
             this.analyzeResult = {};
             let village = await store.village.get(name);
