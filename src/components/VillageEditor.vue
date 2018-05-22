@@ -24,13 +24,21 @@
         @selection="selectHouse"
     />
     <houseAction
+        class="houseAction"
         :selected="selectedHouse"
         @change="changeHouse"
     />
     <VillageAnalyze
+        class="villageAnalyze"
         :result="village.analyzeResult"
     />
     <div class="controls">
+        <button
+            :disabled="!title"
+            @click="checkRemove"
+        >
+            Delete
+        </button>
         <button
             @click="save"
         >
@@ -54,6 +62,17 @@
                 >
                     House will be overwritten
                 </div>
+            </div>
+        </AskDialog>
+        <AskDialog
+            title="Delete village"
+            :show="askDialogRemove"
+            saveButton="Delete"
+            @close="askDialogRemove=false"
+            @confirm="remove"
+        >
+            <div>
+                Do you want to delete village "{{title}}"?
             </div>
         </AskDialog>
     </div>
@@ -81,6 +100,7 @@ export default {
             villageList: [],
             selection: '',
             askDialog: false,
+            askDialogRemove: false,
             selectedHouse: {},
         };
     },
@@ -102,6 +122,14 @@ export default {
         refresh: async function() {
             const list = await store.village.getAll();
             this.villageList = list.map(v => v.name);
+        },
+        checkRemove: function() {
+            this.askDialogRemove = true;
+        },
+        remove: async function() {
+            await this.village.delete();
+            this.refresh();
+            this.askDialogRemove = false;
         },
         save: function() {
             this.askDialog = true;
@@ -155,6 +183,12 @@ export default {
 }
 header {
     grid-area: header;
+}
+.houseAction {
+    grid-area: action;
+}
+.villageAnalysis {
+    grid-area: analyze;
 }
 h2 {
     margin: 0;

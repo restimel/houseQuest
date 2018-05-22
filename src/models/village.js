@@ -54,7 +54,7 @@ const Village = Vue.component('Village', {
             }
         },
         save: function() {
-            return store.village.set({
+            const p = store.village.set({
                 name: this.name,
                 maze: this.maze,
                 houses: this.houses,
@@ -62,11 +62,30 @@ const Village = Vue.component('Village', {
                 createDate: this.createDate,
             });
 
-            this.sync();
+            p.then(() => this.sync());
+
+            return p;
         },
-        sync: function() {
-            if (this.synchronized && this.name) {
+        delete: async function() {
+            await store.village.delete(this.name);
+
+            this.clear();
+            this.sync(true);
+        },
+        sync: function(forceEmpty = false) {
+            if (this.synchronized && (this.name || forceEmpty)) {
                 this.conf.villageName = this.name;
+            }
+        },
+        clear: function () {
+            this.name = '';
+            this.maze = [];
+            this.houses = [];
+            this.analyzeResult = {};
+
+            const length = confVillage.sizeX * confVillage.sizeY;
+            for (let x = 0; x < length; x++) {
+                this.houses.push('_empty_§UP');
             }
         },
         analyze: function(result) {
@@ -96,8 +115,12 @@ const Village = Vue.component('Village', {
         },
         _initValue: async function() {
             if (this.synchronized) {
-                if (!this.name && this.conf.villageName) {
-                    this.get(this.conf.villageName);
+                if (!this.name) {
+                    if (this.conf.villageName) {
+                        this.get(this.conf.villageName);
+                    } else {
+                        this.clear();
+                    }
                 }
             }
         },
