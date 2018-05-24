@@ -72,6 +72,11 @@ export default {
     },
     methods: {
         splitSelected: function() {
+            if (!this.selected.house) {
+                this.houseName = '';
+                this.orientation = 'UP';
+                return;
+            }
             const [name, orientation] = this.selected.house.split('§');
             this.houseName = name;
             this.orientation = orientation;
