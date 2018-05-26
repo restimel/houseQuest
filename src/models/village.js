@@ -20,6 +20,10 @@ const Village = Vue.component('Village', {
             maze: [],
             houses: [],
             infos: [],
+            defaultInfo: {
+                houses: [],
+                orientations: [],
+            },
             updateDate: 0,
             createDate: 0,
             analyzeResult: {},
@@ -52,6 +56,10 @@ const Village = Vue.component('Village', {
             this.name = village.name;
             this.houses = village.houses;
             this.infos = village.infos || [];
+            this.defaultInfo = village.defaultInfo || {
+                houses: [],
+                orientations: [],
+            };
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
 
@@ -65,6 +73,7 @@ const Village = Vue.component('Village', {
                 maze: this.maze,
                 houses: this.houses,
                 infos: this.infos,
+                defaultInfo: this.defaultInfo,
                 updateDate: this.updateDate,
                 createDate: this.createDate,
             });

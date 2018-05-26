@@ -5,34 +5,28 @@
     </header>
     <label>
         House:
-        <select
-            v-model="houseName"
-            @change="change"
-        >
-            <option value="_empty_">No house</option>
-            <option v-for="house of houseList"
-                :key="house"
-                :value="house"
-            >{{house}}</option>
-        </select>
+        <multiSelect
+            v-model="houseNames"
+            :options="houseList"
+            title="Limit request with these houses"
+            @input="change"
+        />
     </label>
     <label>
         Orientation:
-        <select
-            v-model="orientation"
-            @change="change"
-        >
-            <option value="UP">↑</option>
-            <option value="DOWN">↓</option>
-            <option value="LEFT">←</option>
-            <option value="RIGHT">→</option>
-        </select>
+        <multiSelect
+            v-model="orientations"
+            :options="orientationOptions"
+            title="Limit request with these directions"
+            @input="change"
+        />
     </label>
 </aside>
 </template>
 
 <script>
 import store from '@/core/indexedDB';
+import MultiSelect from '@/components/common/MultiSelect';
 
 export default {
     name: 'HouseAction',
@@ -47,14 +41,30 @@ export default {
     data: function() {
         this.refresh();
         return {
-            houseName: [],
-            orientation: [],
+            houseNames: [],
+            orientations: [],
             houseList: [],
+            orientationOptions: [{
+                id: 'UP',
+                text: '↑',
+            }, {
+                id: 'DOWN',
+                text: '↓',
+            }, {
+                id: 'LEFT',
+                text: '←',
+            }, {
+                id: 'RIGHT',
+                text: '→',
+            }],
         };
     },
     computed: {
         resultHouse: function() {
-            return this.houseName + '§' + this.orientation;
+            return {
+                houses: this.houseNames,
+                orientations: this.orientations,
+            };
         },
         hasSelection: function() {
             return typeof this.selected.idx === 'number';
@@ -64,11 +74,9 @@ export default {
         },
     },
     methods: {
-        splitSelected: function() {
-            console.log('TODO split', this.selected.house);
-            const [name, orientation] = this.selected.house.split('§');
-            this.houseName = name;
-            this.orientation = orientation;
+        extractData: function() {
+            this.houseNames = this.selected.info.houses;
+            this.orientations = this.selected.info.orientations;
         },
         change: function() {
             this.$emit('change', this.resultHouse);
@@ -80,8 +88,11 @@ export default {
     },
     watch: {
         selected: function() {
-            this.splitSelected();
+            this.extractData();
         },
+    },
+    components: {
+        MultiSelect,
     },
 };
 </script>

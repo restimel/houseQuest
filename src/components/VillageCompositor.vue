@@ -91,24 +91,24 @@ import Village from '@/models/village';
 import Details from '@/components/Details';
 import HouseSelector from '@/components/composition/HouseSelector';
 import VillageView from '@/components/village/SvgVillage';
-// import HouseAction from '@/components/village/HouseAction';
-// import VillageAnalyze from '@/components/village/VillageAnalyze';
 import AskDialog from '@/components/AskDialog';
-
-const orientations = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
 
 export default {
     name: 'VillageEditor',
     data: function() {
         this.refresh();
 
+        const village = new Village();
+
         return {
             isRequestOpen: true,
             isResultOpen: false,
-            village: new Village(),
+            village: village,
             houseList: [],
-            selectedHouse: {},
-            computeProgress: 25,
+            selectedHouse: {
+                info: village.defaultInfo,
+            },
+            computeProgress: 33,
         };
     },
     computed: {
@@ -132,21 +132,26 @@ export default {
         // },
         selectHouse: function(house, idx) {
             if (this.selectedHouse.idx === idx) {
-                this.selectedHouse = {};
+                this.selectedHouse = {
+                    info: this.village.defaultInfo,
+                };
             } else {
                 this.selectedHouse = {
                     house: house,
                     idx: idx,
+                    info: this.village.infos[idx] || {
+                        houses: [],
+                        orientations: [],
+                    },
                 };
             }
-            console.log(house, idx);
         },
-        changeHouse: function(house) {
-            Vue.set(this.village.infos, this.selectedHouse.idx, house);
-            this.selectedHouse = {
-                house: house,
-                idx: this.selectedHouse.idx,
-            };
+        changeHouse: function(info) {
+            if (this.selectedHouse.idx) {
+                Vue.set(this.village.infos, this.selectedHouse.idx, info);
+            } else {
+                this.village.defaultInfo = info;
+            }
         },
         compute: function() {
             console.log('TODO compute')
@@ -202,7 +207,7 @@ progress {
     display: grid;
     grid-template:
         "svg action" 1fr
-        "svg options" 2fr
+        "svg options" 1fr
         ". controls" 40px
         / 1fr 300px;
     height: 90%;

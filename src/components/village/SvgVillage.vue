@@ -104,7 +104,7 @@
                         :x="(getHouseX(idx) + 0.5) * houseWidth"
                         :y="(getHouseY(idx) + 0.45) * houseHeight + 50"
                     >
-                        {{getDirectionInfo(idx)}}
+                        {{getOrientationInfo(idx)}}
                     </tspan>
                 </text>
             </g>
@@ -131,6 +131,13 @@ import Village from '@/models/village';
 
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
+
+const arrows = {
+    'UP': '↑',
+    'DOWN': '↓',
+    'LEFT': '←',
+    'RIGHT': '→',
+};
 
 export default {
     name: 'VillageView',
@@ -224,13 +231,13 @@ export default {
             }
             return text;
         },
-        getDirectionInfo: function(idx) {
+        getOrientationInfo: function(idx) {
             const info = this.village.infos[idx] || {};
             let text;
-            if (!info.directions || !info.directions.length) {
+            if (!info.orientations || !info.orientations.length) {
                 text = 'Default orientations';
             } else {
-                text = info.directions.join(' ');
+                text = info.orientations.map(o => arrows[o]).join(' ');
             }
             return text;
         },

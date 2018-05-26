@@ -87,6 +87,7 @@ summary:focus {
 
     --aside-left-border: 5px solid var(--menu-background);
     --aside-top-border: 1px solid var(--menu-background);
+    --selected-item-border: 3px outset var(--menu-background);
 }
 </style>
 <style>
@@ -121,5 +122,6 @@ summary:focus {
 
     --aside-left-border: 5px solid var(--menu-background);
     --aside-top-border: 1px solid var(--menu-background);
+    --selected-item-border: 4px outset var(--menu-background);
 }
 </style>
