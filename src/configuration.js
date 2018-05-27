@@ -8,7 +8,7 @@ const configuration = {
     house: {
         sizeX: 4,
         sizeY: 4,
-    }
+    },
 };
 
 export default configuration;

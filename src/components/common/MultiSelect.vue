@@ -103,7 +103,6 @@ export default {
             this.inputValue = '';
         },
         drop: function(id) {
-            console.log('drop', id);
             if (this.internalValue.delete(id)) {
                 this.update();
             }

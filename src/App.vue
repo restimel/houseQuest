@@ -36,6 +36,9 @@ body {
     text-align: center;
     margin: 0;
 }
+header {
+    text-align: center;
+}
 .page-view {
     padding: 1em;
     background-color: var(--page-background);

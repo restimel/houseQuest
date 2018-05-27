@@ -29,7 +29,7 @@ import store from '@/core/indexedDB';
 import MultiSelect from '@/components/common/MultiSelect';
 
 export default {
-    name: 'HouseAction',
+    name: 'HouseSelector',
     props: {
         selected: {
             type: Object,

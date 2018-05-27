@@ -30,11 +30,13 @@
                 :selected="selectedHouse"
                 @change="changeHouse"
             />
-            <aside>
-                <header>Options</header>
-            </aside>
+            <RequestStatus
+                :village="village"
+                @nbPossibilities="changeNbPossibilities"
+            />
             <div class="controls">
                 <button
+                    :disabled="!canCompute"
                     @click="compute"
                 >
                     Compute
@@ -90,6 +92,7 @@ import store from '@/core/indexedDB';
 import Village from '@/models/village';
 import Details from '@/components/Details';
 import HouseSelector from '@/components/composition/HouseSelector';
+import RequestStatus from '@/components/composition/RequestStatus';
 import VillageView from '@/components/village/SvgVillage';
 import AskDialog from '@/components/AskDialog';
 
@@ -108,10 +111,14 @@ export default {
             selectedHouse: {
                 info: village.defaultInfo,
             },
+            nbPossibilities: 0,
             computeProgress: 33,
         };
     },
     computed: {
+        canCompute: function() {
+            return this.nbPossibilities > 0;
+        },
     },
     methods: {
         refresh: async function() {
@@ -119,17 +126,6 @@ export default {
             this.houseList = list.map(v => v.name);
             this.village.get('', true);
         },
-        // save: function() {
-        //     this.askDialog = true;
-        // },
-        // checkSave: async function() {
-        //     if (!this.village.name) {
-        //         return;
-        //     }
-        //     await this.village.save();
-        //     this.refresh();
-        //     this.askDialog = false;
-        // },
         selectHouse: function(house, idx) {
             if (this.selectedHouse.idx === idx) {
                 this.selectedHouse = {
@@ -165,12 +161,16 @@ export default {
         changedStateResult: function(value) {
             this.isResultOpen = value;
         },
+        changeNbPossibilities: function(nbPossibilities) {
+            this.nbPossibilities = nbPossibilities;
+        },
     },
     components: {
         Village: VillageView,
         AskDialog: AskDialog,
         DetailsCustom: Details,
         HouseSelector: HouseSelector,
+        RequestStatus: RequestStatus,
     },
 };
 </script>

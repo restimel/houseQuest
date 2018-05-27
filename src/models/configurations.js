@@ -7,6 +7,8 @@ const Configuration = Vue.component('Configuration', {
             theme: 'default',
             villageName: '',
             houseName: '',
+            timeByMaze: 1,
+
             isLoaded: store.configuration.getAll().then(this.load.bind(this)),
         };
     },
@@ -16,25 +18,25 @@ const Configuration = Vue.component('Configuration', {
                 this[v.type] = v.data || v.weight;
             });
         },
+        updater: function(attribute) {
+            store.configuration.set(attribute, {
+                type: attribute,
+                data: this[attribute],
+            });
+        },
     },
     watch: {
         theme: function()  {
-            store.configuration.set('theme', {
-                type: 'theme',
-                data: this.theme,
-            });
+            this.updater('theme');
         },
         villageName: function () {
-            store.configuration.set('villageName', {
-                type: 'villageName',
-                data: this.villageName,
-            });
+            this.updater('villageName');
         },
         houseName: function () {
-            store.configuration.set('houseName', {
-                type: 'houseName',
-                data: this.houseName,
-            });
+            this.updater('houseName');
+        },
+        timeByMaze: function () {
+            this.updater('timeByMaze');
         },
     },
 });

@@ -19,11 +19,8 @@ const Village = Vue.component('Village', {
             name: '',
             maze: [],
             houses: [],
-            infos: [],
-            defaultInfo: {
-                houses: [],
-                orientations: [],
-            },
+            infos: this._initInfos(),
+            defaultInfo: this._getInitInfo(),
             updateDate: 0,
             createDate: 0,
             analyzeResult: {},
@@ -55,11 +52,8 @@ const Village = Vue.component('Village', {
             }
             this.name = village.name;
             this.houses = village.houses;
-            this.infos = village.infos || [];
-            this.defaultInfo = village.defaultInfo || {
-                houses: [],
-                orientations: [],
-            };
+            this.infos = village.infos || this._initInfos();
+            this.defaultInfo = village.defaultInfo || this._getInitInfo();
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
 
@@ -98,6 +92,7 @@ const Village = Vue.component('Village', {
             this.maze = [];
             this.houses = [];
             this.analyzeResult = {};
+            this.infos = this._initInfos();
 
             const length = confVillage.sizeX * confVillage.sizeY;
             for (let x = 0; x < length; x++) {
@@ -108,6 +103,21 @@ const Village = Vue.component('Village', {
             console.log(performance.now() - self.dbg);
             result.shortestPath = new Set(result.shortestPath);
             this.analyzeResult = result;
+        },
+        _getInitInfo: function() {
+            return {
+                houses: [],
+                orientations: [],
+            }
+        },
+        _initInfos: function() {
+            const length = confVillage.sizeX * confVillage.sizeY;
+            const infos = this.infos || new Array(length);
+
+            for (let x = 0; x < length; x++) {
+                infos[x] = this._getInitInfo();
+            }
+            return infos;
         },
         _initMaze: function() {
             const xLength = confVillage.sizeX * confHouse.sizeX;
