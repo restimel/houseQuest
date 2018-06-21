@@ -110,7 +110,7 @@
             </g>
         </template>
 
-        <template v-if="!readOnly">
+        <template v-if="!readonly">
             <rect v-for="(cellHouse, idx) of village.houses"
                 :key="'villageHouse-'+idx"
                 class="houseArea"
@@ -145,7 +145,7 @@ export default {
         village: {
             type: Village,
         },
-        readOnly: {
+        readonly: {
             type: Boolean,
             default: false,
         },
@@ -164,6 +164,9 @@ export default {
         display: {
             type: String,
             default: 'maze',
+            validator: function(value) {
+                return ['maze', 'info'].includes(value);
+            },
         },
     },
     data: function() {

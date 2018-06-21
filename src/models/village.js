@@ -13,14 +13,25 @@ const Village = Vue.component('Village', {
             type: Boolean,
             default: false,
         },
+        initMaze: {
+            type: Array,
+            required: false,
+            default: function() {
+                return [];
+            },
+        },
+        withoutAnalyze: {
+            type: Boolean,
+            default: false,
+        },
     },
     data: function() {
         return {
             name: '',
-            maze: [],
+            maze: this.initMaze || [],
             houses: [],
             infos: this._initInfos(),
-            defaultInfo: this._getInitInfo(),
+            defaultInfo: this._getInitInfo(true),
             updateDate: 0,
             createDate: 0,
             analyzeResult: {},
@@ -53,7 +64,7 @@ const Village = Vue.component('Village', {
             this.name = village.name;
             this.houses = village.houses;
             this.infos = village.infos || this._initInfos();
-            this.defaultInfo = village.defaultInfo || this._getInitInfo();
+            this.defaultInfo = village.defaultInfo || this._getInitInfo(true);
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
 
@@ -104,11 +115,12 @@ const Village = Vue.component('Village', {
             result.shortestPath = new Set(result.shortestPath);
             this.analyzeResult = result;
         },
-        _getInitInfo: function() {
+        _getInitInfo: function(isDefault = false) {
+            const defaultOrientation = isDefault ? ['UP'] : [];
             return {
                 houses: [],
-                orientations: [],
-            }
+                orientations: defaultOrientation,
+            };
         },
         _initInfos: function() {
             const length = confVillage.sizeX * confVillage.sizeY;
@@ -193,14 +205,14 @@ const Village = Vue.component('Village', {
                         u: true, // up
                         d: true, // down
                         l: true, // left
-                        r: true, //right
+                        r: true, // right
                     };
                 }
                 return {
                     u: false, // up
                     d: false, // down
                     l: false, // left
-                    r: false, //right
+                    r: false, // right
                 };
             }
 
@@ -217,12 +229,14 @@ const Village = Vue.component('Village', {
                     maze[x][y] = cell;
                 }
             }
-            self.dbg = performance.now();
-            worker('analyze', {
-                maze: this.maze,
-                starts: confVillage.starts,
-                ends: confVillage.ends,
-            }).then(this.analyze.bind(this));
+            if (!this.withoutAnalyze) {
+                self.dbg = performance.now();
+                worker('analyze', {
+                    maze: this.maze,
+                    starts: confVillage.starts,
+                    ends: confVillage.ends,
+                }).then(this.analyze.bind(this));
+            }
             this.$emit('maze_change');
         },
     },

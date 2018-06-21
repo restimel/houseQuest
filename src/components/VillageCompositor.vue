@@ -13,7 +13,10 @@
                 <h2>Request</h2>
             </header>
             <div class="info-progress">
-                <progress min="0" max="100" :value="computeProgress" />
+                <template v-if="computeProgress >= 0">
+                    <progress min="0" max="1" :value="computeProgress" />
+                    <span>{{Math.round(computeProgress * 1000)/10}}%</span>
+                </template>
             </div>
         </div>
         <section
@@ -34,14 +37,19 @@
                 :village="village"
                 @nbPossibilities="changeNbPossibilities"
             />
-            <div class="controls">
-                <button
+            <!-- <div class="controls">
+                <button v-if="!isRuning"
                     :disabled="!canCompute"
                     @click="compute"
                 >
                     Compute
                 </button>
-            </div>
+                <button v-else
+                    @click="stopCompute"
+                >
+                    Stop
+                </button>
+            </div> -->
         </section>
     </DetailsCustom>
     
@@ -57,17 +65,36 @@
             <header>
                 <h2>Result</h2>
             </header>
-            <div class="info-progress">
-                <progress min="0" max="100" :value="computeProgress" />
+            <div class="controls-compute">
+                <button v-if="!isRuning"
+                    :disabled="!canCompute"
+                    @click="compute"
+                >
+                    Compute
+                </button>
+                <button v-else
+                    @click="stopCompute"
+                >
+                    Stop
+                </button>
+                <progress v-show="isRuning" />
             </div>
         </div>
         <div slot="body" class="sharedArea">
-            <Village
-                :village="village"
-                :selected="selectedHouse"
-                display="info"
-                @selection="selectHouse"
-            />
+            <div class="village-result">
+                <span v-if="villageComputed.length === 0"
+                    class="noResult"
+                >
+                    No results found yet :/
+                </span>
+                <VillageResult v-for="(vResult, idx) of villageComputed"
+                    :key="'villageResult' + idx"
+                    class="village-result-item"
+                    :result="vResult"
+                    summary="true"
+                    @click="selectResult(idx)"
+                />
+            </div>
             <aside>
                 TODO
             </aside>
@@ -93,15 +120,22 @@ import Village from '@/models/village';
 import Details from '@/components/Details';
 import HouseSelector from '@/components/composition/HouseSelector';
 import RequestStatus from '@/components/composition/RequestStatus';
+import VillageResult from '@/components/composition/VillageResult';
 import VillageView from '@/components/village/SvgVillage';
 import AskDialog from '@/components/AskDialog';
+import worker from '@/core/worker';
+
+import configuration from '@/configuration';
+const {village: confVillage, house: confHouse} = configuration;
 
 export default {
     name: 'VillageEditor',
     data: function() {
         this.refresh();
 
-        const village = new Village();
+        const village = new Village({
+            withoutAnalyze: true,
+        });
 
         return {
             isRequestOpen: true,
@@ -112,12 +146,16 @@ export default {
                 info: village.defaultInfo,
             },
             nbPossibilities: 0,
-            computeProgress: 33,
+            computeProgress: -1,
+            isRuning: false,
+            villageComputed: [],
+            offset: 0,
+            resultLimitation: 10,
         };
     },
     computed: {
         canCompute: function() {
-            return this.nbPossibilities > 0;
+            return this.nbPossibilities > this.offset;
         },
     },
     methods: {
@@ -143,14 +181,85 @@ export default {
             }
         },
         changeHouse: function(info) {
-            if (this.selectedHouse.idx) {
+            if (typeof this.selectedHouse.idx === 'number') {
                 Vue.set(this.village.infos, this.selectedHouse.idx, info);
             } else {
                 this.village.defaultInfo = info;
             }
         },
-        compute: function() {
-            console.log('TODO compute')
+        compute: async function() {
+            this.houseComputed = [];
+            this.isRuning = true;
+            this.isRequestOpen = false;
+            this.isResultOpen = true;
+
+            const houses = new Set();
+            //DEBUG
+            // this.village.infos.forEach((info, i) => {
+            //     info.houses = ['House ' + (i + 1)];
+            // });
+            this.offset = 0;
+
+            this.village.infos.forEach((info) => info.houses.forEach((house) => houses.add(house)));
+            const defaultInfo = Object.assign({}, this.village.defaultInfo);
+            if (defaultInfo.houses.length) {
+                defaultInfo.houses.forEach((house) => houses.add(house));
+            } else {
+                const houseList = this.houseList;
+                defaultInfo.houses = houseList;
+                houseList.forEach((house) => houses.add(house));
+            }
+            if (!defaultInfo.orientations.length) {
+                defaultInfo.orientations = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+            }
+            const mazes = {};
+            const promises = Array.from(houses, (house) => store.house.get(house).then(h => mazes[house] = h));
+
+            await Promise.all(promises);
+            worker('composition', {
+                starts: confVillage.starts,
+                ends: confVillage.ends,
+                nbPossibilities: this.nbPossibilities,
+                infos: this.village.infos,
+                defaultInfo: defaultInfo,
+                mazes: mazes,
+                mazeWidth: this.village.maze.length,
+                mazeHeight: this.village.maze[0].length,
+                mazeWidthHouse: confVillage.sizeX,
+                mazeHeightHouse: confVillage.sizeY,
+                houseWidth: confHouse.sizeX,
+                houseHeight: confHouse.sizeY,
+                useOnce: true,
+                offset: this.offset,
+            }, this.onComputeProgress.bind(this)).then(this.onComputeFinished.bind(this));
+        },
+        stopCompute: function() {
+            worker('stopComposition', {});
+        },
+        onComputeProgress: function(data) {
+            const {progress, maze, houses} = data;
+
+            this.computeProgress = progress;
+            this.offset = data.offset;
+
+            if (maze) {
+                if (this.villageComputed.length + 1 >= this.resultLimitation) {
+                    console.log('Stop there are too much result', this.villageComputed.length)
+                    this.stopCompute();
+                }
+
+                this.villageComputed.push({
+                    maze,
+                    houses,
+                    result: data.result,
+                    difficulty: data.difficulty,
+                });
+            }
+        },
+        onComputeFinished: function(data) {
+            this.isRuning = false;
+            this.computeProgress = data.progress;
+            this.offset = data.offset;
         },
         save: function() {
             console.log('TODO save')
@@ -164,6 +273,9 @@ export default {
         changeNbPossibilities: function(nbPossibilities) {
             this.nbPossibilities = nbPossibilities;
         },
+        selectResult: function(idx) {
+            console.log('A result is selected: ', idx);
+        },
     },
     components: {
         Village: VillageView,
@@ -171,6 +283,7 @@ export default {
         DetailsCustom: Details,
         HouseSelector: HouseSelector,
         RequestStatus: RequestStatus,
+        VillageResult: VillageResult,
     },
 };
 </script>
@@ -185,7 +298,9 @@ export default {
 .summary {
     display: flex;
     justify-content: space-between;
-    /* grid-template: "header progess" 30px / 1fr 300px; */
+    /* grid-template: "header progess" 30px
+                   "results details" 1fr
+                   "results actions" 50px / 1fr 300px; */
     border-bottom: 1px solid var(--menu-background);
     padding-bottom: 0.5em;
 }
@@ -198,8 +313,9 @@ header {
     width: 300px;
 }
 progress {
-    width: 100%;
+    width: 80%;
 }
+
 /* details > p {
     height: 100%;
 } */
@@ -219,8 +335,17 @@ progress {
 h2 {
     margin: 0;
 }
-svg {
+svg,
+.village-result {
     grid-area: svg;
+    display: flex;
+    flex-direction: row;
+    flex-flow: wrap;
+    overflow: auto;
+}
+.village-result-item {
+    width: 200px;
+    margin: 5px;
 }
 aside {
     border-left: var(--aside-left-border);
@@ -238,4 +363,21 @@ aside {
     cursor: pointer;
     height: 30px;
 }
+
+.controls-compute {
+    text-align: center;
+    width: 300px;
+}
+progress:not([value]) {
+    width: 25%;
+}
+
+.noResult {
+    font-size: 1.5em;
+    font-style: italic;
+    margin: 1em;
+    margin-left: 0;
+    flex-grow: 1;
+}
+
 </style>
