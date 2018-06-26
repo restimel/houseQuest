@@ -73,6 +73,9 @@ export default {
             return ['North West', 'West', 'South West', 'North', 'Center', 'South', 'North East', 'East', 'South East'][this.selected.idx] || 'Default';
         },
     },
+    created: function() {
+        this.extractData();
+    },
     methods: {
         extractData: function() {
             this.houseNames = this.selected.info.houses;

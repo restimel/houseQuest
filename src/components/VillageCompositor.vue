@@ -5,7 +5,7 @@
         :open="isRequestOpen"
         @change="changedStateRequest"
     >
-        <div 
+        <div
             class="summary"
             slot="summary"
         >
@@ -14,7 +14,10 @@
             </header>
             <div class="info-progress">
                 <template v-if="computeProgress >= 0">
-                    <progress min="0" max="1" :value="computeProgress" />
+                    <progress min="0" max="1"
+                        :value="computeProgress"
+                        :title="`${offset} / ${nbPossibilities}`"
+                    />
                     <span>{{Math.round(computeProgress * 1000)/10}}%</span>
                 </template>
             </div>
@@ -22,7 +25,7 @@
         <section
             class="sharedArea"
             slot="body"
-        >   
+        >
             <Village
                 :village="village"
                 :selected="selectedHouse"
@@ -52,7 +55,7 @@
             </div> -->
         </section>
     </DetailsCustom>
-    
+
     <DetailsCustom
         class="result details"
         :open="isResultOpen"
@@ -68,16 +71,19 @@
             <div class="controls-compute">
                 <button v-if="!isRuning"
                     :disabled="!canCompute"
-                    @click="compute"
+                    @click.stop="compute"
                 >
                     Compute
                 </button>
                 <button v-else
-                    @click="stopCompute"
+                    :disabled="isStopping"
+                    @click.stop="stopCompute"
                 >
-                    Stop
+                    <span v-if="!isStopping">Stop</span>
+                    <span v-else>Stopping...</span>
                 </button>
                 <progress v-show="isRuning" />
+                <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed }}M /s</span>
             </div>
         </div>
         <div slot="body" class="sharedArea">
@@ -115,6 +121,7 @@
 
 <script>
 import Vue from 'vue';
+import conf from '@/models/configurations';
 import store from '@/core/indexedDB';
 import Village from '@/models/village';
 import Details from '@/components/Details';
@@ -148,14 +155,24 @@ export default {
             nbPossibilities: 0,
             computeProgress: -1,
             isRuning: false,
+            isStopping: false,
             villageComputed: [],
             offset: 0,
             resultLimitation: 10,
+            startCompute: -1,
+            conf: conf,
         };
     },
     computed: {
         canCompute: function() {
             return this.nbPossibilities > this.offset;
+        },
+        speed: function() {
+            if (this.offset) {
+                return Math.round(this.offset / ((Date.now() - this.startCompute) * 1000)); // in M per second
+            } else {
+                return 0;
+            }
         },
     },
     methods: {
@@ -186,6 +203,8 @@ export default {
             } else {
                 this.village.defaultInfo = info;
             }
+            this.computeProgress = -1;
+            this.offset = 0;
         },
         compute: async function() {
             this.houseComputed = [];
@@ -198,7 +217,11 @@ export default {
             // this.village.infos.forEach((info, i) => {
             //     info.houses = ['House ' + (i + 1)];
             // });
-            this.offset = 0;
+            // this.offset = 0;
+            if (this.offset > 0) {
+                console.log('TODO start offset');
+            }
+            this.startCompute = Date.now();
 
             this.village.infos.forEach((info) => info.houses.forEach((house) => houses.add(house)));
             const defaultInfo = Object.assign({}, this.village.defaultInfo);
@@ -234,6 +257,7 @@ export default {
             }, this.onComputeProgress.bind(this)).then(this.onComputeFinished.bind(this));
         },
         stopCompute: function() {
+            this.isStopping = true;
             worker('stopComposition', {});
         },
         onComputeProgress: function(data) {
@@ -258,8 +282,13 @@ export default {
         },
         onComputeFinished: function(data) {
             this.isRuning = false;
+            this.isStopping = false;
             this.computeProgress = data.progress;
             this.offset = data.offset;
+
+            const oldSpeed = this.conf.timeByMaze;
+            const speed = this.speed * 1000;
+            this.conf.timeByMaze = (oldSpeed + speed) / 2;
         },
         save: function() {
             console.log('TODO save')
@@ -378,6 +407,39 @@ progress:not([value]) {
     margin: 1em;
     margin-left: 0;
     flex-grow: 1;
+}
+
+progress[value]::-webkit-progress-bar {
+  background-image:
+	   -webkit-linear-gradient(left,
+	                           transparent 50%,
+                               rgba(0, 0, 0, 0.1) 50%,
+	                           rgba(0, 0, 0, 0.1) 70%,
+                               transparent 70%),
+	   -webkit-linear-gradient(top,
+	                           rgba(0, 0, 0, 0.25),
+	                           rgba(255, 255, 255, 0.25)
+                               ),
+	   -webkit-linear-gradient(left, rgba(250, 50, 20, 0.8) 10%, rgba(225, 220, 100, 0.8) 50%, rgba(255, 250, 50, 0.8) 90%, rgba(155, 225, 50, 0.8));
+
+    background-size: 20px 20px, 100% 100%, 100% 100%;
+}
+
+
+progress[value]::-webkit-progress-value {
+  background-image:
+	   -webkit-linear-gradient(-45deg,
+	                           transparent 33%,
+                               rgba(0, 0, 0, 0.1) 33%,
+	                           rgba(0, 0, 0, 0.1) 66%,
+                               transparent 66%),
+	   -webkit-linear-gradient(top,
+	                           rgba(255, 255, 255, 0.25),
+	                           rgba(0, 0, 0, 0.25)),
+	   -webkit-linear-gradient(left, rgb(0, 20, 200), rgb(120, 170, 255));
+
+    border-radius: 2px;
+    background-size: 40px 40px, 100% 100%, 100% 100%;
 }
 
 </style>

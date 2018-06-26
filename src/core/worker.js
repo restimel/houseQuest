@@ -27,9 +27,16 @@ function task(action, data, progressCallback) {
 function onMessage({data: {id, error, data, finished}}) {
     if (finished || !workerProgress.has(id)) {
         const method = error ? 'reject' : 'resolve';
-        workerStore.get(id)[method](data);
-        workerStore.delete(id);
-        workerProgress.delete(id);
+        const promise = workerStore.get(id);
+        if (promise) {
+            promise[method](data);
+            setTimeout( () => {
+                workerProgress.delete(id);
+                workerStore.delete(id);
+            }, 1000);
+        } else {
+            workerStore.delete(id);
+        }
     } else {
         workerProgress.get(id)(data);
     }

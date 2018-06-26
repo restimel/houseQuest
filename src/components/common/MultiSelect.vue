@@ -55,7 +55,7 @@ export default {
     },
     data: function() {
         return {
-            internalValue: new Set(),
+            internalValue: new Set(this.value),
             inputValue: '',
             gid: gid++,
         };

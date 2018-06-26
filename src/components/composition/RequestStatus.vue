@@ -90,39 +90,55 @@ export default {
                 return total * nbHouses * nbOrientations;
             }, 1);
 
-            nbPossibilities *= this.defaultNbHouses * this.defaultNbOrientations;
-
             this.$emit('nbPossibilities', nbPossibilities);
             return nbPossibilities;
         },
         timeEstimation: function() {
             const format = [];
-            let nbPossibilities = this.nbPossibilities * this.conf.timeByMaze;
-            
+            const nbPreviousGranularity = 3;
+            let granularity = '';
+            let nbPossibilities = this.nbPossibilities / this.conf.timeByMaze;
+
             // compute duration
             const nbmsInDay = 3600000 * 24;
-            if (nbPossibilities >= nbmsInDay) {
+            if (['', 'w'].includes(granularity) && nbPossibilities >= nbmsInDay) {
                 const d = Math.floor(nbPossibilities / nbmsInDay);
                 nbPossibilities -= d * nbmsInDay;
-                format.push(d, 'days ');
+                format.push(d, ' days, ');
+
+                if (!granularity) {
+                    granularity = d > nbPreviousGranularity ? 'w' : 'd';
+                }
             }
-            if (nbPossibilities >= 3600000) {
+            if (['', 'd'].includes(granularity) && nbPossibilities >= 3600000) {
                 const h = Math.floor(nbPossibilities / 3600000);
                 nbPossibilities -= h * 3600000;
                 format.push(h, 'h ');
+
+                if (!granularity) {
+                    granularity = h > nbPreviousGranularity ? 'd' : 'h';
+                }
             }
-            if (nbPossibilities >= 60000) {
+            if (['', 'h'].includes(granularity) && nbPossibilities >= 60000) {
                 const m = Math.floor(nbPossibilities / 60000);
                 nbPossibilities -= m * 60000;
                 format.push(m, 'min ');
+
+                if (!granularity) {
+                    granularity = m > nbPreviousGranularity ? 'h' : 'min';
+                }
             }
-            if (nbPossibilities >= 1000) {
+            if (['', 'min'].includes(granularity) && nbPossibilities >= 1000) {
                 const s = Math.floor(nbPossibilities / 1000);
                 nbPossibilities -= s * 1000;
                 format.push(s, 's ');
+
+                if (!granularity) {
+                    granularity = s > nbPreviousGranularity ? 'h' : 's';
+                }
             }
-            if (nbPossibilities > 0) {
-                format.push(nbPossibilities, 'ms');
+            if (['', 's'].includes(granularity) && nbPossibilities > 0) {
+                format.push(Math.round(nbPossibilities), 'ms');
             }
 
             return format.join('');
