@@ -50,6 +50,10 @@ const Village = Vue.component('Village', {
                 this.clear();
                 return;
             }
+            if (name === '§¤§infos§') {
+                this.clear(true);
+                return;
+            }
             this.name = name;
             this.analyzeResult = {};
             let village = await store.village.get(name);
@@ -59,7 +63,7 @@ const Village = Vue.component('Village', {
                     houses: [],
                     updateDate: 0,
                     createDate: 0,
-                }
+                };
             }
             this.name = village.name;
             this.houses = village.houses;
@@ -98,12 +102,15 @@ const Village = Vue.component('Village', {
                 this.conf.villageName = this.name;
             }
         },
-        clear: function () {
+        clear: function(keepInfos = false) {
             this.name = '';
             this.maze = [];
             this.houses = [];
             this.analyzeResult = {};
-            this.infos = this._initInfos();
+            if (!keepInfos) {
+                this.infos = this._initInfos();
+                this.defaultInfo = this._getInitInfo(true);
+            }
 
             const length = confVillage.sizeX * confVillage.sizeY;
             for (let x = 0; x < length; x++) {
@@ -111,7 +118,6 @@ const Village = Vue.component('Village', {
             }
         },
         analyze: function(result) {
-            console.log(performance.now() - self.dbg);
             result.shortestPath = new Set(result.shortestPath);
             this.analyzeResult = result;
         },
@@ -230,7 +236,6 @@ const Village = Vue.component('Village', {
                 }
             }
             if (!this.withoutAnalyze) {
-                self.dbg = performance.now();
                 worker('analyze', {
                     maze: this.maze,
                     starts: confVillage.starts,

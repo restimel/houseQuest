@@ -58,9 +58,10 @@ export default {
         defaultHouses: function() {
             const houses = this.village.defaultInfo.houses;
             const length = houses.length;
+            const houseListLength = this.houseListLength;
 
-            if (length === 0 || length === this.houseListLength) {
-                return 'All';
+            if (length === 0 || length === houseListLength) {
+                return `All (${houseListLength} houses)`;
             }
 
             return houses.join(', ');
@@ -70,7 +71,7 @@ export default {
             const length = orientations.length;
 
             if (length === 0 || length === 4) {
-                return 'All';
+                return 'All (4 orientations)';
             }
 
             return orientations.map(o => arrows[o]).join(', ');
@@ -97,7 +98,7 @@ export default {
             const format = [];
             const nbPreviousGranularity = 3;
             let granularity = '';
-            let nbPossibilities = this.nbPossibilities / this.conf.timeByMaze;
+            let nbPossibilities = this.nbPossibilities / this.conf.timeByMaze; // (in ms)
 
             // compute duration
             const nbmsInDay = 3600000 * 24;

@@ -502,23 +502,28 @@ function Astar({
     return [mvt.reverse(), complexity, hard, list.reverse()]
 }
 
-const bashTime = 1000;
+const bashTime = 5000;
 async function compose(data, id) {
     // preparation
-    const nbToTest = data.nbPossibilities;
     const {
         mazes, mazeWidth, mazeHeight,
         mazeWidthHouse, mazeHeightHouse, houseWidth, houseHeight,
         starts, ends,
         useOnce,
-        offset: startOffset,
+        offset,
+        nbPossibilities: nbToTest,
     } = data;
+    const nbMaxCell = mazeWidth * mazeHeight;
+    let startOffset = offset;
 
     const houses = new Map();
     const houseUsed = new Set();
 
     let nbTested = startOffset;
     // TODO use starting states depending of nbTested
+    if (nbTested > 0) {
+        console.warn('TODO: use starting offset');
+    }
     const possibilities = data.infos.map((info, index) => {
         let houses, orientations;
 
@@ -549,6 +554,7 @@ async function compose(data, id) {
         }
         return current;
     }, null);
+
     if (useOnce) {
         for (let idx = 0; idx < possibilities.length; idx++) {
             const possibility = possibilities[idx];
@@ -557,29 +563,31 @@ async function compose(data, id) {
                 // previous possibility need to jump to next house
                 if (idx === 0) {
                     // There is no solution left
+                    nbTested = nbToTest; // because last increments where false
                     return finish();
                 }
                 possibility.idxHouse = 0;
                 idx--;
-                const nextPossibility = possibilities[idx];
-                houseUsed.delete(nextPossibility.name);
-                nbTested += nextPossibility.shortcutCost;
-                nextPossibility.idxHouse++;
+                const previousPossibility = possibilities[idx];
+                const previousName = previousPossibility.houses[previousPossibility.idxHouse];
+                houseUsed.delete(previousName);
+                nbTested += previousPossibility.shortcutCost;
+                previousPossibility.idxHouse++;
                 idx--;
                 continue;
             }
 
             const houseName = possibility.houses[possibility.idxHouse];
-
             if (houseUsed.has(houseName)) {
                 // jump to next house
-                nbTested += possibility.orientations.length;
+                nbTested += possibility.shortcutCost;
                 possibility.idxHouse++;
                 idx--; // recompute this possibility
                 continue;
             }
             houseUsed.add(houseName);
         }
+        startOffset = nbTested;
     }
 
     // start looping
@@ -605,30 +613,35 @@ async function compose(data, id) {
         if (id !== currentResult.id) {
             return finish();
         }
-        const time = Date.now();
+        const time = performance.now();
 
         do {
             let maze;
 
             if (startOffset !== nbTested && !nextAction()) {
+                // console.log('analyze', nbTested, 'no more action');
                 return finish();
-            } else
+            }
+
             if (++nbTested >= nbToTest) {
+                // console.log('analyze', nbTested, 'over limit');
                 return finish();
-            } else
+            }
+
             if (!(maze = buildMaze())) {
                 continue;
             }
+
             const result = analyze({ maze, starts, ends });
-            if (result.nbShortestPath < 1024) {
+            if (result.nbShortestPath < nbMaxCell) {
                 sendResult({
                     maze: maze,
                     houses: possibilities.map((possibility) => possibility.houses[possibility.idxHouse] + '§' + possibility.orientations[possibility.idxOrientation]),
-                    result: result,
+                    // result: result,
                 });
                 hasSend = true;
             }
-        } while (Date.now() - time < bashTime);
+        } while (performance.now() - time < bashTime);
 
         if (!hasSend) {
             sendResult();
@@ -652,10 +665,9 @@ async function compose(data, id) {
                     current.idxHouse++;
                 } else {
                     current.idxHouse = 0;
-                    --index;
                     // upgrade next possibility
-                    if (index >= 0) {
-                        if (!nextAction(index)) {
+                    if (index > 0) {
+                        if (!nextAction(index - 1)) {
                             return false;
                         }
                     } else {
@@ -682,7 +694,7 @@ async function compose(data, id) {
 
     function buildMaze() {
         const maze = _initMaze(mazeWidth, mazeHeight);
-        const houseUsed = new Set();
+        // const houseUsed = new Set();
         const ext = starts.concat(ends);
 
         function getCell(x, y) {
@@ -702,12 +714,13 @@ async function compose(data, id) {
             const orientation = info.orientations[info.idxOrientation];
             const offsetX = info.x * houseWidth;
             const offsetY = info.y * houseHeight;
-            if (useOnce) {
-                if (houseUsed.has(houseName)) {
-                    return false;
-                }
-                houseUsed.add(houseName);
-            }
+            // if (useOnce) {
+            //     if (houseUsed.has(houseName)) {
+            //         console.log('Arg', houseName, Array.from(houseUsed).join(','));
+            //         return false;
+            //     }
+            //     houseUsed.add(houseName);
+            // }
             const house = getHouse(houseName, orientation);
             const houseMaze = house.maze;
 

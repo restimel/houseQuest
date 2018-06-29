@@ -8,6 +8,8 @@ const Configuration = Vue.component('Configuration', {
             villageName: '',
             houseName: '',
             timeByMaze: 15000, // nb by ms
+            defaultInfo: null,
+            infos: [],
 
             isLoaded: store.configuration.getAll().then(this.load.bind(this)),
         };
@@ -37,6 +39,12 @@ const Configuration = Vue.component('Configuration', {
         },
         timeByMaze: function () {
             this.updater('timeByMaze');
+        },
+        infos: function () {
+            this.updater('infos');
+        },
+        defaultInfo: function () {
+            this.updater('defaultInfo');
         },
     },
 });

@@ -16,9 +16,11 @@
                 <template v-if="computeProgress >= 0">
                     <progress min="0" max="1"
                         :value="computeProgress"
-                        :title="`${offset} / ${nbPossibilities}`"
+                        :title="stateProgress"
                     />
-                    <span>{{Math.round(computeProgress * 1000)/10}}%</span>
+                    <span
+                        :title="stateProgress"
+                    >{{Math.round(computeProgress * 1000)/10}}%</span>
                 </template>
             </div>
         </div>
@@ -66,7 +68,10 @@
             class="summary"
         >
             <header>
-                <h2>Result</h2>
+                <h2>
+                    Result
+                    <span v-if="villageComputed.length > 0">({{villageComputed.length}})</span>
+                </h2>
             </header>
             <div class="controls-compute">
                 <button v-if="!isRuning"
@@ -83,7 +88,7 @@
                     <span v-else>Stopping...</span>
                 </button>
                 <progress v-show="isRuning" />
-                <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed }}M /s</span>
+                <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed | dec1 }}M /s</span>
             </div>
         </div>
         <div slot="body" class="sharedArea">
@@ -158,7 +163,7 @@ export default {
             isStopping: false,
             villageComputed: [],
             offset: 0,
-            resultLimitation: 10,
+            resultLimitation: 100,
             startCompute: -1,
             conf: conf,
         };
@@ -168,18 +173,46 @@ export default {
             return this.nbPossibilities > this.offset;
         },
         speed: function() {
-            if (this.offset) {
-                return Math.round(this.offset / ((Date.now() - this.startCompute) * 1000)); // in M per second
+            const offset = this.offset;
+            const startCompute = this.startCompute;
+            if (offset) {
+                const speed = offset / ((performance.now() - startCompute) * 1000); // in M per second
+                return speed;
             } else {
                 return 0;
             }
         },
+        stateProgress: function() {
+            return `${this.offset} / ${this.nbPossibilities}`;
+        },
+        watcherInfo: function() {
+            return (this.conf.infos, this.conf.defaultInfo, Date.now());
+        },
+    },
+    created: function() {
+        this.updateInfo();
     },
     methods: {
+        updateInfo: function() {
+            const defaultInfo = this.conf.defaultInfo;
+            const infos = this.conf.infos;
+            if (defaultInfo) {
+                this.village.defaultInfo = defaultInfo;
+                if (typeof this.selectedHouse.idx === 'undefined') {
+                    Vue.set(this.selectedHouse, 'info', defaultInfo);
+                }
+            }
+            if (infos.length) {
+                this.village.infos = infos;
+                if (typeof this.selectedHouse.idx === 'number') {
+                    Vue.set(this.selectedHouse, 'info', infos);
+                }
+            }
+        },
         refresh: async function() {
             const list = await store.house.getAll();
             this.houseList = list.map(v => v.name);
-            this.village.get('', true);
+            this.village.get('§¤§infos§', true);
         },
         selectHouse: function(house, idx) {
             if (this.selectedHouse.idx === idx) {
@@ -200,8 +233,12 @@ export default {
         changeHouse: function(info) {
             if (typeof this.selectedHouse.idx === 'number') {
                 Vue.set(this.village.infos, this.selectedHouse.idx, info);
+                const confInfos = this.conf.infos;
+                confInfos[this.selectedHouse.idx] = info;
+                Vue.set(this.conf, 'infos', confInfos.slice());
             } else {
                 this.village.defaultInfo = info;
+                this.conf.defaultInfo = info;
             }
             this.computeProgress = -1;
             this.offset = 0;
@@ -221,7 +258,7 @@ export default {
             if (this.offset > 0) {
                 console.log('TODO start offset');
             }
-            this.startCompute = Date.now();
+            this.startCompute = performance.now();
 
             this.village.infos.forEach((info) => info.houses.forEach((house) => houses.add(house)));
             const defaultInfo = Object.assign({}, this.village.defaultInfo);
@@ -261,12 +298,17 @@ export default {
             worker('stopComposition', {});
         },
         onComputeProgress: function(data) {
-            const {progress, maze, houses} = data;
+            const {progress, maze, houses, offset} = data;
+            const {currentProgress, currentOffset} = this;
 
-            this.computeProgress = progress;
-            this.offset = data.offset;
+            if (progress > currentProgress) {
+                this.computeProgress = progress;
+            }
+            if (offset > currentOffset) {
+                this.offset = offset;
+            }
 
-            if (maze) {
+            if (houses || maze) {
                 if (this.villageComputed.length + 1 >= this.resultLimitation) {
                     console.log('Stop there are too much result', this.villageComputed.length)
                     this.stopCompute();
@@ -286,8 +328,8 @@ export default {
             this.computeProgress = data.progress;
             this.offset = data.offset;
 
-            const oldSpeed = this.conf.timeByMaze;
-            const speed = this.speed * 1000;
+            const oldSpeed = this.conf.timeByMaze; // (in maze / ms)
+            const speed = this.speed * 1000;// (in M maze / s → maze / ms)
             this.conf.timeByMaze = (oldSpeed + speed) / 2;
         },
         save: function() {
@@ -304,6 +346,16 @@ export default {
         },
         selectResult: function(idx) {
             console.log('A result is selected: ', idx);
+        },
+    },
+    watch: {
+        watcherInfo: function() {
+            this.updateInfo();
+        },
+    },
+    filters: {
+        dec1: function(value) {
+            return Math.round(value * 10) / 10;
         },
     },
     components: {

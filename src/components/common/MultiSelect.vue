@@ -16,6 +16,8 @@
         :list="dataListId"
         :placeholder="placeholder"
         @change="changeValue"
+        @keydown.enter="changeValue"
+        @keydown.esc="inputValue = ''"
     >
 
     <datalist :id="dataListId">

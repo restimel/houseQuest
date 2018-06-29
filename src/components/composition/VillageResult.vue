@@ -34,19 +34,23 @@ export default {
         };
     },
     created: function () {
-        this.village.maze = this.result.maze;
-        if (this.result.houses)
-        this.village.houses = this.result.houses;
+        this.updateResult();
     },
     computed: {
-        
     },
     methods: {
-        
+        updateResult: function() {
+            if (this.result.maze) {
+                this.village.maze = this.result.maze;
+            }
+            if (this.result.houses) {
+                this.village.houses = this.result.houses;
+            }
+        },
     },
     watch: {
         result: function() {
-            this.village.maze = this.result.maze;
+            this.updateResult();
         },
     },
     components: {
