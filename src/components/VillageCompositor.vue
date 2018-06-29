@@ -309,12 +309,19 @@ export default {
             }
 
             if (houses || maze) {
+                const houseId = houses.join('');
+                if (this.villageComputed.find(v => v.houseId === houseId)) {
+                    // already displayed
+                    return;
+                }
+
                 if (this.villageComputed.length + 1 >= this.resultLimitation) {
                     console.log('Stop there are too much result', this.villageComputed.length)
                     this.stopCompute();
                 }
 
                 this.villageComputed.push({
+                    houseId,
                     maze,
                     houses,
                     result: data.result,
