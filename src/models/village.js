@@ -76,6 +76,10 @@ const Village = Vue.component('Village', {
                 this.sync();
             }
         },
+        getList: async function() {
+            const villages = await store.village.getAll();
+            return villages;
+        },
         save: function() {
             const p = store.village.set({
                 name: this.name,

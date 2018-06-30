@@ -42,19 +42,6 @@
                 :village="village"
                 @nbPossibilities="changeNbPossibilities"
             />
-            <!-- <div class="controls">
-                <button v-if="!isRuning"
-                    :disabled="!canCompute"
-                    @click="compute"
-                >
-                    Compute
-                </button>
-                <button v-else
-                    @click="stopCompute"
-                >
-                    Stop
-                </button>
-            </div> -->
         </section>
     </DetailsCustom>
 
@@ -91,7 +78,7 @@
                 <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed | dec1 }}M /s</span>
             </div>
         </div>
-        <div slot="body" class="sharedArea">
+        <div slot="body" class="sharedArea resultArea">
             <div class="village-result">
                 <span v-if="villageComputed.length === 0"
                     class="noResult"
@@ -101,18 +88,23 @@
                 <VillageResult v-for="(vResult, idx) of villageComputed"
                     :key="'villageResult' + idx"
                     class="village-result-item"
+                    :class="{'result-selected': selectedResult === idx}"
                     :result="vResult"
                     summary="true"
                     @click="selectResult(idx)"
                 />
             </div>
-            <aside>
-                TODO
-            </aside>
-            <aside>
-                <header>Options</header>
-            </aside>
-            <div class="controls">
+            <VillageResultDetails
+                class="result-details"
+                :result="villageComputed[selectedResult]"
+                ref="villageReesultDetails"
+            />
+            <div class="controls" v-show="selectedResult !== -1">
+                <button
+                    @click="removeResult"
+                >
+                    Remove from result
+                </button>
                 <button
                     @click="save"
                 >
@@ -133,6 +125,7 @@ import Details from '@/components/Details';
 import HouseSelector from '@/components/composition/HouseSelector';
 import RequestStatus from '@/components/composition/RequestStatus';
 import VillageResult from '@/components/composition/VillageResult';
+import VillageResultDetails from '@/components/composition/VillageResultDetails';
 import VillageView from '@/components/village/SvgVillage';
 import AskDialog from '@/components/AskDialog';
 import worker from '@/core/worker';
@@ -166,6 +159,8 @@ export default {
             resultLimitation: 100,
             startCompute: -1,
             conf: conf,
+
+            selectedResult: -1,
         };
     },
     computed: {
@@ -250,11 +245,7 @@ export default {
             this.isResultOpen = true;
 
             const houses = new Set();
-            //DEBUG
-            // this.village.infos.forEach((info, i) => {
-            //     info.houses = ['House ' + (i + 1)];
-            // });
-            // this.offset = 0;
+
             if (this.offset > 0) {
                 console.log('TODO start offset');
             }
@@ -336,11 +327,11 @@ export default {
             this.offset = data.offset;
 
             const oldSpeed = this.conf.timeByMaze; // (in maze / ms)
-            const speed = this.speed * 1000;// (in M maze / s → maze / ms)
+            const speed = this.speed * 1000; // (in M maze / s → maze / ms)
             this.conf.timeByMaze = (oldSpeed + speed) / 2;
         },
         save: function() {
-            console.log('TODO save')
+            this.$refs.villageReesultDetails.save();
         },
         changedStateRequest: function(value) {
             this.isRequestOpen = value;
@@ -352,8 +343,19 @@ export default {
             this.nbPossibilities = nbPossibilities;
         },
         selectResult: function(idx) {
-            console.log('A result is selected: ', idx);
+            if (idx === this.selectedResult) {
+                this.selectedResult = -1;
+            } else {
+                this.selectedResult = idx;
+            }
         },
+        removeResult: function() {
+            const selected = this.selectedResult;
+            if (selected >= 0) {
+                this.selectedResult = -1;
+                this.villageComputed.splice(selected, 1);
+            }
+        }
     },
     watch: {
         watcherInfo: function() {
@@ -372,6 +374,7 @@ export default {
         HouseSelector: HouseSelector,
         RequestStatus: RequestStatus,
         VillageResult: VillageResult,
+        VillageResultDetails: VillageResultDetails,
     },
 };
 </script>
@@ -415,6 +418,12 @@ progress {
         ". controls" 40px
         / 1fr 300px;
     height: 90%;
+}
+.sharedArea.resultArea {
+    grid-template:
+        "svg options" 1fr
+        ". controls" 40px
+        / 1fr 400px;
 }
 .body {
     height: 100%;
@@ -468,7 +477,11 @@ progress:not([value]) {
     flex-grow: 1;
 }
 
-progress[value]::-webkit-progress-bar {
+.result-selected {
+    background-color: var(--selected-item-background);
+}
+
+/* progress[value]::-webkit-progress-bar {
   background-image:
 	   -webkit-linear-gradient(left,
 	                           transparent 50%,
@@ -499,6 +512,6 @@ progress[value]::-webkit-progress-value {
 
     border-radius: 2px;
     background-size: 40px 40px, 100% 100%, 100% 100%;
-}
+} */
 
 </style>

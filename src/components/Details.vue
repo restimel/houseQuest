@@ -8,7 +8,7 @@
     >
         <slot name="summary"/>
     </div>
-    <div v-if="isOpen"
+    <div v-show="isOpen"
         class="body"
     >
         <slot name="body" />

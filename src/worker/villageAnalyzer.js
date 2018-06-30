@@ -619,12 +619,10 @@ async function compose(data, id) {
             let maze;
 
             if (startOffset !== nbTested && !nextAction()) {
-                // console.log('analyze', nbTested, 'no more action');
                 return finish();
             }
 
             if (++nbTested >= nbToTest) {
-                // console.log('analyze', nbTested, 'over limit');
                 return finish();
             }
 
