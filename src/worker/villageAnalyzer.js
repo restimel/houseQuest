@@ -502,7 +502,7 @@ function Astar({
     return [mvt.reverse(), complexity, hard, list.reverse()]
 }
 
-const bashTime = 5000;
+const bashTime = 3000;
 async function compose(data, id) {
     // preparation
     const {
@@ -706,6 +706,11 @@ async function compose(data, id) {
             return cell;
         }
 
+        function copyCell(house, x, y) {
+            const {u, d, l, r} = house[x][y];
+            return {u, d, l, r};
+        }
+
         // copy houses to maze
         for (let info of possibilities) {
             const houseName = info.houses[info.idxHouse];
@@ -725,7 +730,7 @@ async function compose(data, id) {
             // apply the copy
             for (let x = 0; x < houseWidth; x++) {
                 for (let y = 0; y < houseHeight; y++) {
-                    maze[x + offsetX][y + offsetY] = houseMaze[x][y];
+                    maze[x + offsetX][y + offsetY] = copyCell(houseMaze, x, y);
                 }
             }
         }
