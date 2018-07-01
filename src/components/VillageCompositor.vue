@@ -65,7 +65,7 @@
                     :disabled="!canCompute"
                     @click.stop="compute"
                 >
-                    Compute
+                    Compute <span v-show="continueComputation">(continue)</span>
                 </button>
                 <button v-else
                     :disabled="isStopping"
@@ -85,21 +85,27 @@
                 >
                     No results found yet :/
                 </span>
-                <VillageResult v-for="(vResult, idx) of villageComputed"
+                <VillageResult v-for="(vResult, idx) of villageComputedDisplayed"
                     :key="'villageResult' + idx"
                     class="village-result-item"
-                    :class="{'result-selected': selectedResult === idx}"
+                    :class="{'result-selected': selectedResult.houseId === vResult.houseId}"
                     :result="vResult"
                     summary="true"
-                    @click="selectResult(idx)"
+                    @click="selectResult(vResult.houseId)"
                 />
+                <div
+                    v-show="villageComputed.length - villageComputedDisplayed.length > 0"
+                    class=""
+                >
+                    There are also {{villageComputed.length - villageComputedDisplayed.length}} more result.
+                </div>
             </div>
             <VillageResultDetails
                 class="result-details"
-                :result="villageComputed[selectedResult]"
+                :result="selectedResult"
                 ref="villageReesultDetails"
             />
-            <div class="controls" v-show="selectedResult !== -1">
+            <div class="controls" v-show="!!selectedResult.houseId">
                 <button
                     @click="removeResult"
                 >
@@ -154,13 +160,14 @@ export default {
             computeProgress: -1,
             isRuning: false,
             isStopping: false,
-            villageComputed: [],
             offset: 0,
-            resultLimitation: 100,
+            villageComputed: [],
+            resultLimitation: 50,
+            villageComputedNb: 0,
             startCompute: -1,
             conf: conf,
 
-            selectedResult: -1,
+            selectedResult: {},
         };
     },
     computed: {
@@ -182,6 +189,12 @@ export default {
         },
         watcherInfo: function() {
             return (this.conf.infos, this.conf.defaultInfo, Date.now());
+        },
+        continueComputation: function() {
+            return this.canCompute && this.offset > 0;
+        },
+        villageComputedDisplayed: function() {
+            return this.villageComputed.slice(0, this.resultLimitation);
         },
     },
     created: function() {
@@ -306,18 +319,21 @@ export default {
                     return;
                 }
 
-                if (this.villageComputed.length + 1 >= this.resultLimitation) {
-                    console.log('Stop there are too much result', this.villageComputed.length)
+                this.villageComputedNb++;
+                if (this.villageComputedNb >= this.resultLimitation) {
+                    // console.log('Stop there are too much result', this.villageComputed.length)
                     this.stopCompute();
                 }
 
-                this.villageComputed.push({
-                    houseId,
-                    maze,
-                    houses,
-                    result: data.result,
-                    difficulty: data.difficulty,
-                });
+                setTimeout(() => {
+                    this.villageComputed.push({
+                        houseId,
+                        maze,
+                        houses,
+                        result: data.result,
+                        difficulty: data.difficulty,
+                    });
+                }, 10);
             }
         },
         onComputeFinished: function(data) {
@@ -342,18 +358,23 @@ export default {
         changeNbPossibilities: function(nbPossibilities) {
             this.nbPossibilities = nbPossibilities;
         },
-        selectResult: function(idx) {
-            if (idx === this.selectedResult) {
-                this.selectedResult = -1;
+        selectResult: function(id) {
+            if (id === this.selectedResult.houseId) {
+                this.selectedResult = {};
             } else {
-                this.selectedResult = idx;
+                this.selectedResult = this.villageComputed.find(v => v.houseId === id);
             }
         },
         removeResult: function() {
             const selected = this.selectedResult;
-            if (selected >= 0) {
-                this.selectedResult = -1;
-                this.villageComputed.splice(selected, 1);
+            if (selected) {
+                this.selectedResult = {};
+                const id = selected.houseId;
+                const idx = this.villageComputed.findIndex(v => v.houseId === id);
+                if (idx !== -1) {
+                    this.villageComputed.splice(idx, 1);
+                    this.villageComputedNb--;
+                }
             }
         }
     },

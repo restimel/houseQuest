@@ -74,7 +74,7 @@ export default {
     },
     computed: {
         noResult: function() {
-            return !this.result.maze && !this.result.houses;
+            return !this.result || !this.result.maze && !this.result.houses;
         },
         isNameUsed: function() {
             return this.villageList.includes(this.village.name);
@@ -82,7 +82,7 @@ export default {
     },
     methods: {
         updateResult: function() {
-            const {maze, houses, name} = this.result;
+            const {maze, houses, name} = this.result || {};
 
             if (maze) {
                 this.village.maze = maze;

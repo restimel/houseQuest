@@ -7,6 +7,9 @@ import conf from '@/models/configurations';
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
 
+let workerLimitation = 5;
+const waitWorkerRetry = 200;
+
 const Village = Vue.component('Village', {
     props: {
         synchronized: {
@@ -240,11 +243,22 @@ const Village = Vue.component('Village', {
                 }
             }
             if (!this.withoutAnalyze) {
-                worker('analyze', {
-                    maze: this.maze,
-                    starts: confVillage.starts,
-                    ends: confVillage.ends,
-                }).then(this.analyze.bind(this));
+                const workerAnalyze = () => {
+                    if (workerLimitation > 0) {
+                        workerLimitation--;
+                        worker('analyze', {
+                            maze: this.maze,
+                            starts: confVillage.starts,
+                            ends: confVillage.ends,
+                        }).then((result) => {
+                            workerLimitation++;
+                            this.analyze(result);
+                        });
+                    } else {
+                        setTimeout(workerAnalyze, waitWorkerRetry);
+                    }
+                };
+                workerAnalyze();
             }
             this.$emit('maze_change');
         },

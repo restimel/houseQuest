@@ -502,7 +502,11 @@ function Astar({
     return [mvt.reverse(), complexity, hard, list.reverse()]
 }
 
-const bashTime = 3000;
+/**
+ * Compose
+ */
+
+const bashTime = 2000;
 async function compose(data, id) {
     // preparation
     const {
@@ -520,10 +524,8 @@ async function compose(data, id) {
     const houseUsed = new Set();
 
     let nbTested = startOffset;
-    // TODO use starting states depending of nbTested
-    if (nbTested > 0) {
-        console.warn('TODO: use starting offset');
-    }
+    let _offsetIdx = startOffset;
+
     const possibilities = data.infos.map((info, index) => {
         let houses, orientations;
 
@@ -548,9 +550,21 @@ async function compose(data, id) {
             shortcutCost: orientations.length,
         };
     });
-    possibilities.reduceRight((previous, current) => {
+    possibilities.reduceRight((previous, current, idx) => {
         if (previous) {
             current.shortcutCost *= previous.shortcutCost * previous.houses.length;
+        }
+        // set indexes to the correct values (when a starting offset is given)
+        if (_offsetIdx) {
+            const costOrientation = current.orientations.length;
+            const idxOrientation = _offsetIdx % costOrientation;
+            current.idxOrientation = idxOrientation;
+            _offsetIdx = (_offsetIdx - idxOrientation) / costOrientation;
+
+            const costHouse = current.houses.length;
+            const idxHouse = _offsetIdx % costHouse;
+            current.idxHouse = idxHouse;
+            _offsetIdx = (_offsetIdx - idxHouse) / costHouse;
         }
         return current;
     }, null);
@@ -563,7 +577,7 @@ async function compose(data, id) {
                 // previous possibility need to jump to next house
                 if (idx === 0) {
                     // There is no solution left
-                    nbTested = nbToTest; // because last increments where false
+                    // nbTested = nbToTest; // because last increments where false
                     return finish();
                 }
                 possibility.idxHouse = 0;
@@ -571,9 +585,14 @@ async function compose(data, id) {
                 const previousPossibility = possibilities[idx];
                 const previousName = previousPossibility.houses[previousPossibility.idxHouse];
                 houseUsed.delete(previousName);
-                nbTested += previousPossibility.shortcutCost;
+                nbTested += previousPossibility.orientations.length - 1; // XXX: it is not shortcut because the cost of next house is already computed
                 previousPossibility.idxHouse++;
                 idx--;
+                const idxOrientation = previousPossibility.idxOrientation;
+                if (idxOrientation) {
+                    nbTested -= idxOrientation;
+                    previousPossibility.idxOrientation = 0;
+                }
                 continue;
             }
 
@@ -583,6 +602,11 @@ async function compose(data, id) {
                 nbTested += possibility.shortcutCost;
                 possibility.idxHouse++;
                 idx--; // recompute this possibility
+                const idxOrientation = possibility.idxOrientation;
+                if (idxOrientation) {
+                    nbTested -= idxOrientation;
+                    possibility.idxOrientation = 0;
+                }
                 continue;
             }
             houseUsed.add(houseName);
