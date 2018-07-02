@@ -3,6 +3,7 @@
     <Village
         :village="village"
         display="maze"
+        :changeDisplay="false"
         readonly
     />
 </div>
@@ -23,10 +24,6 @@ export default {
         },
     },
     data: function() {
-        // console.log(this.result, JSON.parse(JSON.stringify(this.result)))
-        // setTimeout(() => {
-        //     console.log('secondary:',JSON.parse(JSON.stringify(this.village)))
-        // }, 10);
         return {
             village: new Village({
                 withoutAnalyze: true,

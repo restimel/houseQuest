@@ -29,9 +29,11 @@
             slot="body"
         >
             <Village
+                class="svg"
                 :village="village"
                 :selected="selectedHouse"
                 display="info"
+                :changeDisplay="false"
                 @selection="selectHouse"
             />
             <HouseSelector
@@ -321,7 +323,6 @@ export default {
 
                 this.villageComputedNb++;
                 if (this.villageComputedNb >= this.resultLimitation) {
-                    // console.log('Stop there are too much result', this.villageComputed.length)
                     this.stopCompute();
                 }
 
@@ -428,9 +429,6 @@ progress {
     width: 80%;
 }
 
-/* details > p {
-    height: 100%;
-} */
 .sharedArea {
     display: grid;
     grid-template:
@@ -453,7 +451,7 @@ progress {
 h2 {
     margin: 0;
 }
-svg,
+.svg,
 .village-result {
     grid-area: svg;
     display: flex;

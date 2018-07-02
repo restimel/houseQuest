@@ -506,7 +506,7 @@ function Astar({
  * Compose
  */
 
-const bashTime = 2000;
+const bashTime = 1000;
 async function compose(data, id) {
     // preparation
     const {
