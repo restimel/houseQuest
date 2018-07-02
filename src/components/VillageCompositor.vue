@@ -261,9 +261,6 @@ export default {
 
             const houses = new Set();
 
-            if (this.offset > 0) {
-                console.log('TODO start offset');
-            }
             this.startCompute = performance.now();
 
             this.village.infos.forEach((info) => info.houses.forEach((house) => houses.add(house)));
@@ -305,7 +302,7 @@ export default {
         },
         onComputeProgress: function(data) {
             const {progress, maze, houses, offset} = data;
-            const {currentProgress, currentOffset} = this;
+            const {computeProgress: currentProgress, offset: currentOffset} = this;
 
             if (progress > currentProgress) {
                 this.computeProgress = progress;
