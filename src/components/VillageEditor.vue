@@ -21,6 +21,8 @@
         :village="village"
         :selected="selectedHouse"
         :result="village.analyzeResult"
+        display="mazeInfo"
+        :changeDisplay="['maze', 'mazeInfo']"
         @selection="selectHouse"
     />
     <houseAction
@@ -191,7 +193,7 @@ header {
 h2 {
     margin: 0;
 }
-svg {
+.svg-container {
     grid-area: svg;
 }
 aside {

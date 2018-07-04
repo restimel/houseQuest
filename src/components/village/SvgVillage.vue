@@ -1,99 +1,165 @@
 <template>
-<svg width="98%" height="98%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
-    <defs>
-        <path id="arrow" class="arrow" d="M0,25 v-55 l-20,20 20,-20 20,20" />
-        <path id="wallLeft" d="M0,0 v100" />
-        <path id="wallUp" d="M0,0 h100" />
-        <path id="wallRight" d="M100,0 v100" />
-        <path id="wallDown" d="M0,100 h100" />
-    </defs>
-    <g>
-        <rect
-            class="villageWall"
-            x="0"
-            y="0"
-            :width="width"
-            :height="height"
-        />
-
-        <g v-for="start of starts" :key="'start-'+start">
+<div class="svg-container">
+    <select v-if="changeDisplayValues.length > 1"
+        v-model="currentDisplay"
+    >
+        <option v-for="item of changeDisplayValues"
+            :key="item.id"
+            :value="item.id"
+        >
+            {{item.label}}
+        </option>
+    </select>
+    <svg width="98%" height="98%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
+        <defs>
+            <path id="arrow" class="arrow" d="M0,25 v-55 l-20,20 20,-20 20,20" />
+            <path id="wallLeft" d="M0,0 v100" />
+            <path id="wallUp" d="M0,0 h100" />
+            <path id="wallRight" d="M100,0 v100" />
+            <path id="wallDown" d="M0,100 h100" />
+        </defs>
+        <g>
             <rect
-                class="villageStart"
-                :x="cellX(start)"
-                :y="cellY(start)"
-                :width="size"
-                :height="size"
-            />
-            <use href="#arrow"
-                class="outside"
+                class="villageWall"
                 x="0"
                 y="0"
-                :transform="transformArrow(start)"
+                :width="width"
+                :height="height"
             />
-        </g>
-        <g v-for="end of ends" :key="'end-'+end">
-            <rect
-                class="villageEnd"
-                :x="cellX(end)"
-                :y="cellY(end)"
-                :width="size"
-                :height="size"
-            />
-            <use href="#arrow"
-                class="outside"
-                x="0"
-                y="0"
-                :transform="transformArrow(end, true)"
-            />
-        </g>
 
-        <template v-if="village.maze[0]">
-            <g v-for="(cellColumn, idx) of village.maze"
-                :key="'villageCellColumn-'+idx"
-            >
-                <g v-for="(cell, idy) of cellColumn"
-                    :key="'villageCell-'+idx+'-'+idy"
-                >
-                    <use :x="idx * size" :y="idy * size" href="#wallLeft" class="wall" :class="{isSolidWall: !cell.l}" :rid="renderId" />
-                    <use :x="idx * size" :y="idy * size" href="#wallRight" class="wall" :class="{isSolidWall: !cell.r}" :rid="renderId" />
-                    <use :x="idx * size" :y="idy * size" href="#wallUp" class="wall" :class="{isSolidWall: !cell.u}" :rid="renderId" />
-                    <use :x="idx * size" :y="idy * size" href="#wallDown" class="wall" :class="{isSolidWall: !cell.d}" :rid="renderId" />
-                </g>
+            <g v-for="start of starts" :key="'start-'+start">
+                <rect
+                    class="villageStart"
+                    :x="cellX(start)"
+                    :y="cellY(start)"
+                    :width="size"
+                    :height="size"
+                />
+                <use href="#arrow"
+                    class="outside"
+                    x="0"
+                    y="0"
+                    :transform="transformArrow(start)"
+                />
             </g>
-        </template>
+            <g v-for="end of ends" :key="'end-'+end">
+                <rect
+                    class="villageEnd"
+                    :x="cellX(end)"
+                    :y="cellY(end)"
+                    :width="size"
+                    :height="size"
+                />
+                <use href="#arrow"
+                    class="outside"
+                    x="0"
+                    y="0"
+                    :transform="transformArrow(end, true)"
+                />
+            </g>
 
-        <template v-if="result.cells">
-            <g v-for="(cellColumn, idx) of result.cells"
-                :key="'resultCellColumn-'+idx"
-            >
-                <g v-for="(cell, idy) of cellColumn"
-                    :key="'resultCell-'+idx+'-'+idy"
+            <template v-if="isMaze">
+                <g v-for="(cellColumn, idx) of village.maze"
+                    :key="'villageCellColumn-'+idx"
                 >
-                    <use href="#arrow"
-                        v-if="cell.orientation"
-                        :class="result.shortestPath.has(idx+', '+idy) ? 'solution' : 'notSolution'"
-                        x="0"
-                        y="0"
-                        :transform="transformXYArrow(idx, idy, cell.orientation)"
+                    <g v-for="(cell, idy) of cellColumn"
+                        :key="'villageCell-'+idx+'-'+idy"
+                    >
+                        <use :x="idx * size" :y="idy * size" href="#wallLeft" class="wall" :class="{isSolidWall: !cell.l}" :rid="renderId" />
+                        <use :x="idx * size" :y="idy * size" href="#wallRight" class="wall" :class="{isSolidWall: !cell.r}" :rid="renderId" />
+                        <use :x="idx * size" :y="idy * size" href="#wallUp" class="wall" :class="{isSolidWall: !cell.u}" :rid="renderId" />
+                        <use :x="idx * size" :y="idy * size" href="#wallDown" class="wall" :class="{isSolidWall: !cell.d}" :rid="renderId" />
+                    </g>
+                </g>
+            </template>
+
+            <template v-if="result.cells">
+                <g v-for="(cellColumn, idx) of result.cells"
+                    :key="'resultCellColumn-'+idx"
+                >
+                    <g v-for="(cell, idy) of cellColumn"
+                        :key="'resultCell-'+idx+'-'+idy"
+                    >
+                        <use href="#arrow"
+                            v-if="cell.orientation"
+                            :class="result.shortestPath.has(idx+', '+idy) ? 'solution' : 'notSolution'"
+                            x="0"
+                            y="0"
+                            :transform="transformXYArrow(idx, idy, cell.orientation)"
+                        />
+                    </g>
+                </g>
+            </template>
+
+            <template v-if="isInfo">
+                <g v-for="(cellHouse, idx) of village.houses"
+                    :key="'villageHouseInfo-'+idx"
+                >
+                    <rect
+                        class="houseInfoArea"
+                        :x="getHouseX(idx) * houseWidth"
+                        :y="getHouseY(idx) * houseHeight"
+                        :width="houseWidth"
+                        :height="houseHeight"
                     />
+                    <text
+                        class="text-info"
+                    >
+                        <tspan
+                            :x="(getHouseX(idx) + 0.5) * houseWidth"
+                            :y="(getHouseY(idx) + 0.45) * houseHeight"
+                        >
+                            {{getHouseInfo(idx)}}
+                        </tspan>
+                        <tspan
+                            :x="(getHouseX(idx) + 0.5) * houseWidth"
+                            :y="(getHouseY(idx) + 0.45) * houseHeight + 50"
+                        >
+                            {{getOrientationInfo(idx)}}
+                        </tspan>
+                    </text>
                 </g>
-            </g>
-        </template>
+            </template>
+            <template v-if="isDetailed">
+                <g v-for="(cellHouse, idx) of village.houses"
+                    :key="'villageHouseDetail-'+idx"
+                >
+                    <title>{{getHouseDetail(idx)}}</title>
+                    <rect
+                        class="houseDetailArea"
+                        :x="(getHouseX(idx) + 0.5) * houseWidth"
+                        :y="getHouseY(idx) * houseHeight"
+                        :width="houseWidth / 2"
+                        :height="55"
+                    />
+                    <text
+                        class="text-detail"
+                    >
+                        <tspan
+                            :x="(getHouseX(idx) + 0.75) * houseWidth"
+                            :y="getHouseY(idx) * houseHeight + 40"
+                        >
+                            {{getHouseDetail(idx)}}
+                        </tspan>
+                    </text>
+                </g>
+            </template>
 
-        <template v-if="!readOnly">
-            <rect v-for="(cellHouse, idx) of village.houses"
-                :key="'villageHouse-'+idx"
-                class="houseArea"
-                :class="{selectedHouse: selected.idx === idx}"
-                :x="getHouseX(idx) * houseWidth"
-                :y="getHouseY(idx) * houseHeight"
-                :width="houseWidth"
-                :height="houseHeight"
-                @click="selectHouse(cellHouse, idx)"
-            />
-        </template>
-    </g>
-</svg>
+            <template v-if="!readonly">
+                <rect v-for="(cellHouse, idx) of village.houses"
+                    :key="'villageHouse-'+idx"
+                    class="houseArea"
+                    :class="{selectedHouse: selected.idx === idx}"
+                    :x="getHouseX(idx) * houseWidth"
+                    :y="getHouseY(idx) * houseHeight"
+                    :width="houseWidth"
+                    :height="houseHeight"
+                    @click="selectHouse(cellHouse, idx)"
+                />
+            </template>
+        </g>
+    </svg>
+</div>
 </template>
 
 <script>
@@ -102,13 +168,20 @@ import Village from '@/models/village';
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
 
+const arrows = {
+    'UP': '↑',
+    'DOWN': '↓',
+    'LEFT': '←',
+    'RIGHT': '→',
+};
+
 export default {
     name: 'VillageView',
     props: {
         village: {
             type: Village,
         },
-        readOnly: {
+        readonly: {
             type: Boolean,
             default: false,
         },
@@ -124,6 +197,17 @@ export default {
                 return {};
             },
         },
+        display: {
+            type: String,
+            default: 'maze',
+            validator: function(value) {
+                return ['maze', 'info', 'mazeInfo'].includes(value);
+            },
+        },
+        changeDisplay: {
+            type: [Boolean, Array],
+            default: true,
+        },
     },
     data: function() {
         return {
@@ -131,6 +215,7 @@ export default {
             starts: confVillage.starts,
             ends: confVillage.ends,
             renderId: 0,
+            currentDisplay: this.display,
         };
     },
     created: function() {
@@ -158,10 +243,38 @@ export default {
             return this.height + 2 * this.size;
         },
         houseWidth: function() {
-            return confHouse.sizeX * this.size
+            return confHouse.sizeX * this.size;
         },
         houseHeight: function() {
-            return confHouse.sizeY * this.size
+            return confHouse.sizeY * this.size;
+        },
+        isMaze: function() {
+            return (this.currentDisplay === 'maze' || this.currentDisplay === 'mazeInfo') && this.village.maze[0];
+        },
+        isInfo: function() {
+            return this.currentDisplay==='info';
+        },
+        isDetailed: function() {
+            return this.currentDisplay === 'mazeInfo';
+        },
+        changeDisplayValues: function() {
+            if (this.changeDisplay === false) {
+                return [];
+            }
+            let list = [{
+                id: 'maze',
+                label: 'Maze',
+            }, {
+                id: 'mazeInfo',
+                label: 'Maze and house names',
+            }, {
+                id: 'info',
+                label: 'House limitation',
+            }];
+            if (this.changeDisplay.length > 0) {
+                list = list.filter(l => this.changeDisplay.includes(l.id));
+            }
+            return list;
         },
     },
     methods: {
@@ -176,6 +289,33 @@ export default {
         },
         getHouseY: function(idx) {
             return idx % confVillage.sizeX;
+        },
+        getHouseInfo: function(idx) {
+            const info = this.village.infos[idx] || {};
+            let text;
+            if (!info.houses || !info.houses.length) {
+                text = 'Default selection';
+            } else
+            if (info.houses.length === 1) {
+                text = `"${info.houses[0]}" only`;
+            } else {
+                text = `limited to ${info.houses.length} houses`;
+            }
+            return text;
+        },
+        getOrientationInfo: function(idx) {
+            const info = this.village.infos[idx] || {};
+            let text;
+            if (!info.orientations || !info.orientations.length) {
+                text = 'Default orientations';
+            } else {
+                text = info.orientations.map(o => arrows[o]).join(' ');
+            }
+            return text;
+        },
+        getHouseDetail: function(idx) {
+            const [name, orientation] = this.village.houses[idx].split('§');
+            return `${name} ${arrows[orientation]}`;
         },
         transformXYArrow: function(x, y, orientation) {
             let deg = 0;
@@ -209,6 +349,11 @@ export default {
         },
         selectHouse: function(house, idx) {
             this.$emit('selection', house, idx);
+        },
+    },
+    watch: {
+        display: function() {
+            this.currentDisplay = this.display;
         },
     },
 };
@@ -259,6 +404,11 @@ export default {
         stroke: var(--house-wall);
     }
 
+    .houseInfoArea {
+        fill: none;
+        stroke: var(--house-wall);
+    }
+
     .houseArea {
         fill: rgba(0, 0, 0, 0);
         stroke: none;
@@ -275,5 +425,32 @@ export default {
         stroke: var(--house-selected-border);
         stroke-width: 5;
         stroke-dasharray: 15;
+    }
+    .text-info {
+        font-size: 30px;
+        text-anchor: middle;
+    }
+    .text-detail {
+        font-size: 50px;
+        text-anchor: middle;
+    }
+    .houseDetailArea {
+        fill: var(--selected-item-background);
+        opacity: 0.5;
+    }
+    .button {
+        font-size: 50px;
+        text-anchor: middle;
+        cursor: pointer;
+    }
+    .item-display {
+        font-size: 50px;
+        text-anchor: end;
+        cursor: pointer;
+    }
+    .button rect {
+        fill: #e3e3e3;
+        stroke-width: 2px;
+        stroke: black;
     }
 </style>

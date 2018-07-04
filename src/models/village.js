@@ -7,9 +7,23 @@ import conf from '@/models/configurations';
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
 
+let workerLimitation = 5;
+const waitWorkerRetry = 200;
+
 const Village = Vue.component('Village', {
     props: {
         synchronized: {
+            type: Boolean,
+            default: false,
+        },
+        initMaze: {
+            type: Array,
+            required: false,
+            default: function() {
+                return [];
+            },
+        },
+        withoutAnalyze: {
             type: Boolean,
             default: false,
         },
@@ -17,8 +31,10 @@ const Village = Vue.component('Village', {
     data: function() {
         return {
             name: '',
-            maze: [],
+            maze: this.initMaze || [],
             houses: [],
+            infos: this._initInfos(),
+            defaultInfo: this._getInitInfo(true),
             updateDate: 0,
             createDate: 0,
             analyzeResult: {},
@@ -37,6 +53,10 @@ const Village = Vue.component('Village', {
                 this.clear();
                 return;
             }
+            if (name === '§¤§infos§') {
+                this.clear(true);
+                return;
+            }
             this.name = name;
             this.analyzeResult = {};
             let village = await store.village.get(name);
@@ -46,10 +66,12 @@ const Village = Vue.component('Village', {
                     houses: [],
                     updateDate: 0,
                     createDate: 0,
-                }
+                };
             }
             this.name = village.name;
             this.houses = village.houses;
+            this.infos = village.infos || this._initInfos();
+            this.defaultInfo = village.defaultInfo || this._getInitInfo(true);
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
 
@@ -57,11 +79,17 @@ const Village = Vue.component('Village', {
                 this.sync();
             }
         },
+        getList: async function() {
+            const villages = await store.village.getAll();
+            return villages;
+        },
         save: function() {
             const p = store.village.set({
                 name: this.name,
                 maze: this.maze,
                 houses: this.houses,
+                infos: this.infos,
+                defaultInfo: this.defaultInfo,
                 updateDate: this.updateDate,
                 createDate: this.createDate,
             });
@@ -81,11 +109,15 @@ const Village = Vue.component('Village', {
                 this.conf.villageName = this.name;
             }
         },
-        clear: function () {
+        clear: function(keepInfos = false) {
             this.name = '';
             this.maze = [];
             this.houses = [];
             this.analyzeResult = {};
+            if (!keepInfos) {
+                this.infos = this._initInfos();
+                this.defaultInfo = this._getInitInfo(true);
+            }
 
             const length = confVillage.sizeX * confVillage.sizeY;
             for (let x = 0; x < length; x++) {
@@ -93,9 +125,24 @@ const Village = Vue.component('Village', {
             }
         },
         analyze: function(result) {
-            console.log(performance.now() - self.dbg);
             result.shortestPath = new Set(result.shortestPath);
             this.analyzeResult = result;
+        },
+        _getInitInfo: function(isDefault = false) {
+            const defaultOrientation = isDefault ? ['UP'] : [];
+            return {
+                houses: [],
+                orientations: defaultOrientation,
+            };
+        },
+        _initInfos: function() {
+            const length = confVillage.sizeX * confVillage.sizeY;
+            const infos = this.infos || new Array(length);
+
+            for (let x = 0; x < length; x++) {
+                infos[x] = this._getInitInfo();
+            }
+            return infos;
         },
         _initMaze: function() {
             const xLength = confVillage.sizeX * confHouse.sizeX;
@@ -144,7 +191,8 @@ const Village = Vue.component('Village', {
                 for (let y = 0; y < confVillageSizeY; y++) {
                     const house = new House();
                     houseMaze[x][y] = house;
-                    const [houseName, orientation] = (houses[x * confVillageSizeX + y] || '').split('§');
+                    const cellHouse = houses[x * confVillageSizeX + y];
+                    const [houseName, orientation] = (cellHouse || '').split('§');
                     house.orientation = orientation;
                     promises.push(house.get(houseName));
                 }
@@ -170,14 +218,14 @@ const Village = Vue.component('Village', {
                         u: true, // up
                         d: true, // down
                         l: true, // left
-                        r: true, //right
+                        r: true, // right
                     };
                 }
                 return {
                     u: false, // up
                     d: false, // down
                     l: false, // left
-                    r: false, //right
+                    r: false, // right
                 };
             }
 
@@ -194,12 +242,24 @@ const Village = Vue.component('Village', {
                     maze[x][y] = cell;
                 }
             }
-            self.dbg = performance.now();
-            worker('analyze', {
-                maze: this.maze,
-                starts: confVillage.starts,
-                ends: confVillage.ends,
-            }).then(this.analyze.bind(this));
+            if (!this.withoutAnalyze) {
+                const workerAnalyze = () => {
+                    if (workerLimitation > 0) {
+                        workerLimitation--;
+                        worker('analyze', {
+                            maze: this.maze,
+                            starts: confVillage.starts,
+                            ends: confVillage.ends,
+                        }).then((result) => {
+                            workerLimitation++;
+                            this.analyze(result);
+                        });
+                    } else {
+                        setTimeout(workerAnalyze, waitWorkerRetry);
+                    }
+                };
+                workerAnalyze();
+            }
             this.$emit('maze_change');
         },
     },

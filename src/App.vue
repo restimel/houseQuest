@@ -36,6 +36,9 @@ body {
     text-align: center;
     margin: 0;
 }
+header {
+    text-align: center;
+}
 .page-view {
     padding: 1em;
     background-color: var(--page-background);
@@ -49,6 +52,9 @@ body {
 }
 summary {
     cursor: pointer;
+}
+summary:focus {
+    outline: none;
 }
 </style>
 
@@ -84,6 +90,9 @@ summary {
 
     --aside-left-border: 5px solid var(--menu-background);
     --aside-top-border: 1px solid var(--menu-background);
+    --selected-item-border: 3px outset var(--menu-background);
+
+    --selected-item-background: var(--menu-background);
 }
 </style>
 <style>
@@ -118,5 +127,8 @@ summary {
 
     --aside-left-border: 5px solid var(--menu-background);
     --aside-top-border: 1px solid var(--menu-background);
+    --selected-item-border: 4px outset var(--menu-background);
+
+    --selected-item-background: var(--menu-background);
 }
 </style>

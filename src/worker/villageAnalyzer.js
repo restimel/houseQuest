@@ -1,13 +1,20 @@
 import { access } from "fs";
 
+const currentResult = {
+    id: -1,
+    error: false,
+    data: null,
+    progress: -1,
+};
+
 self.onmessage = ({ data: { id, action, data } }) => {
     const result = {
         id: id,
         error: false,
         data: null,
     };
-    doAction(action, data, result);
-    self.postMessage(result);
+    doAction(action, data, result, id);
+    sendMessage(result);
 };
 
 const emptyCell = {
@@ -17,10 +24,32 @@ const emptyCell = {
     l: false,
 };
 
-function doAction(action, data, result) {
+function sendMessage(message, extend = false) {
+    const msg = extend ? Object.assign({}, currentResult, message) : message;
+    self.postMessage(msg);
+}
+
+function doAction(action, data, result, id) {
     switch (action) {
         case 'analyze':
             result.data = analyze(data);
+            break;
+        case 'composition':
+            Object.assign(currentResult, {
+                id: id,
+                error: false,
+                data: {
+                    progress: 0,
+                },
+            });
+
+            result.data = {
+                progress: 0,
+            };
+            compose(data, id);
+            break;
+        case 'stopComposition':
+            currentResult.id = -1;
             break;
         default:
             result.error = true;
@@ -284,13 +313,11 @@ function analyze({maze, starts, ends}) {
                 // magic
             ];
         };
-        var p1 = performance.now();
         const result = Astar({
             initValues,
             computeNext,
             checkEnd,
         })
-        console.log('Aetoile', performance.now() -p1);
         return result;
     }
 
@@ -337,7 +364,6 @@ function analyze({maze, starts, ends}) {
         });
     }
 
-    const dbg = performance.now();
     const accessible = new Map();
     const startCells = new Map(starts.map(start => [start, start.split(/,\s*/).map(x => +x)]));
     const endCells = new Map(ends.map(end => [end, end.split(/,\s*/).map(x => +x)]));
@@ -390,7 +416,6 @@ function analyze({maze, starts, ends}) {
         });
     }
 
-    console.log('analyze (in worker):', performance.now() - dbg);
     return {
         nbCellAccessible: accessible.size,
         nbShortestPath: shortestPathLength,
@@ -476,3 +501,381 @@ function Astar({
     }
     return [mvt.reverse(), complexity, hard, list.reverse()]
 }
+
+/**
+ * Compose
+ */
+
+const bashTime = 1000;
+async function compose(data, id) {
+    // preparation
+    const {
+        mazes, mazeWidth, mazeHeight,
+        mazeWidthHouse, mazeHeightHouse, houseWidth, houseHeight,
+        starts, ends,
+        useOnce,
+        offset,
+        nbPossibilities: nbToTest,
+    } = data;
+    const nbMaxCell = mazeWidth * mazeHeight;
+    let startOffset = offset;
+
+    const houses = new Map();
+    const houseUsed = new Set();
+
+    let nbTested = startOffset;
+    let _offsetIdx = startOffset;
+
+    const possibilities = data.infos.map((info, index) => {
+        let houses, orientations;
+
+        if (info.houses.length) {
+            houses = info.houses;
+        } else {
+            houses = data.defaultInfo.houses;
+        }
+
+        if (info.orientations.length) {
+            orientations = info.orientations;
+        } else {
+            orientations = data.defaultInfo.orientations;
+        }
+
+        return {
+            houses, orientations,
+            idxHouse: 0,
+            idxOrientation: 0,
+            x: Math.floor(index / mazeWidthHouse),
+            y: index % mazeWidthHouse,
+            shortcutCost: orientations.length,
+        };
+    });
+    possibilities.reduceRight((previous, current, idx) => {
+        if (previous) {
+            current.shortcutCost *= previous.shortcutCost * previous.houses.length;
+        }
+        // set indexes to the correct values (when a starting offset is given)
+        if (_offsetIdx) {
+            const costOrientation = current.orientations.length;
+            const idxOrientation = _offsetIdx % costOrientation;
+            current.idxOrientation = idxOrientation;
+            _offsetIdx = (_offsetIdx - idxOrientation) / costOrientation;
+
+            const costHouse = current.houses.length;
+            const idxHouse = _offsetIdx % costHouse;
+            current.idxHouse = idxHouse;
+            _offsetIdx = (_offsetIdx - idxHouse) / costHouse;
+        }
+        return current;
+    }, null);
+
+    if (useOnce) {
+        for (let idx = 0; idx < possibilities.length; idx++) {
+            const possibility = possibilities[idx];
+
+            if (possibility.idxHouse >= possibility.houses.length) {
+                // previous possibility need to jump to next house
+                if (idx === 0) {
+                    // There is no solution left
+                    // nbTested = nbToTest; // because last increments where false
+                    return finish();
+                }
+                possibility.idxHouse = 0;
+                idx--;
+                const previousPossibility = possibilities[idx];
+                const previousName = previousPossibility.houses[previousPossibility.idxHouse];
+                houseUsed.delete(previousName);
+                nbTested += previousPossibility.orientations.length - 1; // XXX: it is not shortcut because the cost of next house is already computed
+                previousPossibility.idxHouse++;
+                idx--;
+                const idxOrientation = previousPossibility.idxOrientation;
+                if (idxOrientation) {
+                    nbTested -= idxOrientation;
+                    previousPossibility.idxOrientation = 0;
+                }
+                continue;
+            }
+
+            const houseName = possibility.houses[possibility.idxHouse];
+            if (houseUsed.has(houseName)) {
+                // jump to next house
+                nbTested += possibility.shortcutCost;
+                possibility.idxHouse++;
+                idx--; // recompute this possibility
+                const idxOrientation = possibility.idxOrientation;
+                if (idxOrientation) {
+                    nbTested -= idxOrientation;
+                    possibility.idxOrientation = 0;
+                }
+                continue;
+            }
+            houseUsed.add(houseName);
+        }
+        startOffset = nbTested;
+    }
+
+    // start looping
+    setTimeout(runBash, 1, id);
+
+    // declare functions
+    function finish() {
+        sendMessage({finished: true, id: id, data: { progress: nbTested / nbToTest, offset: nbTested } }, true);
+    }
+
+    function sendResult(data) {
+        sendMessage({
+            id: id,
+            data: Object.assign({
+                progress: nbTested / nbToTest,
+                offset: nbTested,
+            }, data)
+        }, true);
+    }
+
+    function runBash(id) {
+        let hasSend = false;
+        if (id !== currentResult.id) {
+            return finish();
+        }
+        const time = performance.now();
+
+        do {
+            let maze;
+
+            if (startOffset !== nbTested && !nextAction()) {
+                return finish();
+            }
+
+            if (++nbTested >= nbToTest) {
+                return finish();
+            }
+
+            if (!(maze = buildMaze())) {
+                continue;
+            }
+
+            const result = analyze({ maze, starts, ends });
+            if (result.nbShortestPath < nbMaxCell) {
+                sendResult({
+                    maze: maze,
+                    houses: possibilities.map((possibility) => possibility.houses[possibility.idxHouse] + '§' + possibility.orientations[possibility.idxOrientation]),
+                    // result: result,
+                });
+                hasSend = true;
+            }
+        } while (performance.now() - time < bashTime);
+
+        if (!hasSend) {
+            sendResult();
+        }
+        setTimeout(runBash, 1, id);
+    }
+
+    function nextAction(index = possibilities.length - 1) {
+        let current = possibilities[index];
+        // upgrade to next orientations
+        if (current.idxOrientation < current.orientations.length - 1) {
+            current.idxOrientation++;
+        } else {
+            current.idxOrientation = 0;
+
+            let ok = false;
+            while (!ok) {
+                ok = true;
+                // upgrade to next House
+                if (current.idxHouse < current.houses.length - 1) {
+                    current.idxHouse++;
+                } else {
+                    current.idxHouse = 0;
+                    // upgrade next possibility
+                    if (index > 0) {
+                        if (!nextAction(index - 1)) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+
+                if (useOnce) {
+                    const houseUsed = new Set();
+                    for (let idx = 0; idx <= index; idx++) {
+                        const possibility = possibilities[idx];
+                        houseUsed.add(possibility.houses[possibility.idxHouse]);
+                    }
+                    if (houseUsed.size <= index) {
+                        nbTested += current.shortcutCost;
+                        ok = false;
+                    }
+                }
+            };
+        }
+
+        return true;
+    }
+
+    function buildMaze() {
+        const maze = _initMaze(mazeWidth, mazeHeight);
+        // const houseUsed = new Set();
+        const ext = starts.concat(ends);
+
+        function getCell(x, y) {
+            const row = maze[x];
+            let cell = row && row[y];
+            if (!cell) {
+                const id = [x, y].join(', ');
+                const val = !!ext.find((c) => c === id);
+                return {u: val, d: val, l: val, r: val};
+            }
+            return cell;
+        }
+
+        function copyCell(house, x, y) {
+            const {u, d, l, r} = house[x][y];
+            return {u, d, l, r};
+        }
+
+        // copy houses to maze
+        for (let info of possibilities) {
+            const houseName = info.houses[info.idxHouse];
+            const orientation = info.orientations[info.idxOrientation];
+            const offsetX = info.x * houseWidth;
+            const offsetY = info.y * houseHeight;
+            // if (useOnce) {
+            //     if (houseUsed.has(houseName)) {
+            //         console.log('Arg', houseName, Array.from(houseUsed).join(','));
+            //         return false;
+            //     }
+            //     houseUsed.add(houseName);
+            // }
+            const house = getHouse(houseName, orientation);
+            const houseMaze = house.maze;
+
+            // apply the copy
+            for (let x = 0; x < houseWidth; x++) {
+                for (let y = 0; y < houseHeight; y++) {
+                    maze[x + offsetX][y + offsetY] = copyCell(houseMaze, x, y);
+                }
+            }
+        }
+
+        // update border cells
+        const mazeX = maze.length;
+        const mazeY = maze[0].length;
+        for (let x = 0; x < mazeX; x++) {
+            for (let y = 0; y < mazeY; y++) {
+                const cell = maze[x][y];
+                if (cell.u && !getCell(x, y - 1).d) {
+                    cell.u = false;
+                }
+                if (cell.d && !getCell(x, y + 1).u) {
+                    cell.d = false;
+                }
+                if (cell.r && !getCell(x + 1, y).l) {
+                    cell.r = false;
+                }
+                if (cell.l && !getCell(x - 1, y).r) {
+                    cell.l = false;
+                }
+            }
+        }
+
+        // check maze
+
+        return maze;
+    }
+
+    function getHouse(name, orientation) {
+        const key = `${name}§${orientation}`;
+
+        if (!houses.has(key)) {
+            const house = mazes[name];
+            if (orientation === 'UP') {
+                houses.set(key, house);
+            } else {
+                houses.set(key, {maze: rotateHouse(house, orientation)});
+            }
+        }
+
+        return houses.get(key);
+    }
+}
+
+/** Copy of _initMaze in models/village.js */
+function _initMaze(xLength, yLength) {
+    const maze = new Array(xLength);
+    for (let x = 0; x < xLength; x++) {
+        const column = new Array(yLength)
+        maze[x] = column;
+        for (let y = 0; y < yLength; y++) {
+            column[y] = {
+                u: true,
+                d: true,
+                l: true,
+                r: true,
+            };
+        }
+    }
+
+    return maze;
+}
+
+function rotateHouse(house, orientation) {
+    const maze = house.maze;
+    const sizeX = maze.length;
+    const sizeY = maze[0].length;
+    const newMaze = new Array(sizeX);
+
+    function getCell(x, y) {
+        let X, Y, cell;
+        switch(orientation) {
+            case 'DOWN':
+                X = sizeX - x - 1;
+                Y = sizeY - y - 1;
+                cell = maze[X][Y] || noCell;
+                return {
+                    u: cell.d,
+                    d: cell.u,
+                    r: cell.l,
+                    l: cell.r,
+                };
+            case 'LEFT':
+                X = sizeX - y - 1;
+                Y = x;
+                cell = maze[X][Y] || noCell;
+                return {
+                    u: cell.r,
+                    d: cell.l,
+                    r: cell.d,
+                    l: cell.u,
+                };
+            case 'RIGHT':
+                X = y;
+                Y = sizeY - x - 1;
+                cell = maze[X][Y] || noCell;
+                return {
+                    u: cell.l,
+                    d: cell.r,
+                    r: cell.u,
+                    l: cell.d,
+                };
+            case 'UP':
+                return maze[x][y];
+        }
+    }
+
+    for (let x = 0; x < sizeX; x++) {
+        const newMazeX = newMaze[x] = new Array(sizeY);
+        for (let y = 0; y < sizeY; y++) {
+            newMazeX[y] = getCell(x, y);
+        }
+    }
+
+    return newMaze;
+}
+const noCell = {
+    u: false,
+    d: false,
+    l: false,
+    r: false,
+};

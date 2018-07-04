@@ -59,6 +59,13 @@ dialog {
     box-shadow: 5px 5px 10px black;
     padding: 1em;
 }
+dialog.fixed {
+    /* position: fixed; */
+    top: 33%;
+    /* left: 50%; */
+    transform: translate(-50%, -50%);
+    margin-top: 0;
+}
 
 header {
     font-size: 1.2em;
