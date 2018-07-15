@@ -24,10 +24,14 @@ export default {
         },
     },
     data: function() {
-        return {
-            village: new Village({
+        const village = new Village({
+            propsData: {
                 withoutAnalyze: true,
-            }),
+            },
+        });
+
+        return {
+            village: village,
         };
     },
     created: function () {
@@ -42,6 +46,9 @@ export default {
             }
             if (this.result.houses) {
                 this.village.houses = this.result.houses;
+            }
+            if (this.result.result) {
+                this.village.result = this.result.result;
             }
         },
     },

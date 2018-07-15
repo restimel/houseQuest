@@ -76,7 +76,7 @@
                     <span v-if="!isStopping">Stop</span>
                     <span v-else>Stopping...</span>
                 </button>
-                <progress v-show="isRuning" />
+                <progress v-show="isRuning"/>
                 <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed | dec1 }}M /s</span>
             </div>
         </div>
@@ -147,7 +147,9 @@ export default {
         this.refresh();
 
         const village = new Village({
-            withoutAnalyze: true,
+            propsData: {
+                withoutAnalyze: true,
+            },
         });
 
         return {
@@ -168,6 +170,7 @@ export default {
             villageComputedNb: 0,
             startCompute: -1,
             conf: conf,
+            status: 'not started',
 
             selectedResult: {},
         };
@@ -187,7 +190,7 @@ export default {
             }
         },
         stateProgress: function() {
-            return `${this.offset} / ${this.nbPossibilities}`;
+            return `${this.status} ${this.offset} / ${this.nbPossibilities}`;
         },
         watcherInfo: function() {
             return (this.conf.infos, this.conf.defaultInfo, Date.now());
@@ -252,6 +255,7 @@ export default {
             }
             this.computeProgress = -1;
             this.offset = 0;
+            this.status = 'not started';
         },
         compute: async function() {
             this.houseComputed = [];
@@ -278,6 +282,8 @@ export default {
             const mazes = {};
             const promises = Array.from(houses, (house) => store.house.get(house).then(h => mazes[house] = h));
 
+            this.status = 'running';
+
             await Promise.all(promises);
             worker('composition', {
                 starts: confVillage.starts,
@@ -299,6 +305,9 @@ export default {
         stopCompute: function() {
             this.isStopping = true;
             worker('stopComposition', {});
+            if (this.status === 'running') {
+                this.status = 'Stopped on demand';
+            }
         },
         onComputeProgress: function(data) {
             const {progress, maze, houses, offset} = data;
@@ -320,6 +329,7 @@ export default {
 
                 this.villageComputedNb++;
                 if (this.villageComputedNb >= this.resultLimitation) {
+                    this.status = 'Limit of results reached';
                     this.stopCompute();
                 }
 
@@ -343,6 +353,9 @@ export default {
             const oldSpeed = this.conf.timeByMaze; // (in maze / ms)
             const speed = this.speed * 1000; // (in M maze / s → maze / ms)
             this.conf.timeByMaze = (oldSpeed + speed) / 2;
+            if (this.status === 'running') {
+                this.status = 'Complete';
+            }
         },
         save: function() {
             this.$refs.villageReesultDetails.save();

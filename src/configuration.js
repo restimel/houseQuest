@@ -1,4 +1,5 @@
 const configuration = {
+    version: '1.0.1',
     village: {
         sizeX: 3,
         sizeY: 3,
