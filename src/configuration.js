@@ -1,5 +1,7 @@
+import {version} from '../package.json';
+
 const configuration = {
-    version: '1.0.2',
+    version: version,
     village: {
         sizeX: 3,
         sizeY: 3,
