@@ -17,6 +17,8 @@
 </template>
 <script>
 
+import configuration from '@/configuration';
+
 export default {
     name: 'about',
     data: function() {
@@ -33,6 +35,9 @@ export default {
             }, {
                 name: 'licence',
                 value: 'MIT',
+            }, {
+                name: 'version',
+                value: configuration.version,
             }],
             addedData: [{
                 name: 'Written in Austria and Switzerland',

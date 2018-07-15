@@ -7,7 +7,7 @@ const Configuration = Vue.component('Configuration', {
             theme: 'default',
             villageName: '',
             houseName: '',
-            timeByMaze: 15000, // nb by ms
+            timeByMaze: 5000, // nb by ms
             defaultInfo: null,
             infos: [],
 
