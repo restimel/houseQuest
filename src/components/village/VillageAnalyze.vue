@@ -1,7 +1,9 @@
 <template>
-<aside>
+<aside
+    :class="{minimize: simpleDisplay}"
+>
     <template v-if="hasResult">
-        <header>
+        <header v-if="!simpleDisplay">
             Village Analysis
         </header>
         <div v-show="isResolvable" class="information difficulty">
@@ -21,76 +23,78 @@
                 {{difficultyPercent}}
             </span>
         </div>
-        <div v-if="!isResolvable" class="information notResolvable"
-            title="It is not possible to find a path from start to end"
-        >
-            Not resolvable!
-        </div>
-        <div v-else class="information resolvable"
-            title="It is possible to find at least a path from start to end"
-        >
-            Is resolvable
-        </div>
+        <div v-if="!simpleDisplay">
+            <div v-if="!isResolvable" class="information notResolvable"
+                title="It is not possible to find a path from start to end"
+            >
+                Not resolvable!
+            </div>
+            <div v-else class="information resolvable"
+                title="It is possible to find at least a path from start to end"
+            >
+                Is resolvable
+            </div>
 
-        <div class="item"
-            title="Number of cell which is possible to access from starting cells"
-        >
-            Number of accessible cells:
-            <span class="computed">
-                {{result.nbCellAccessible}}
-            </span>
-        </div>
-        
-        <template v-if="isResolvable">
             <div class="item"
-                title="Minimum number of cells to go through from start to end."
+                title="Number of cell which is possible to access from starting cells"
             >
-                Shortest path:
+                Number of accessible cells:
                 <span class="computed">
-                    {{result.nbShortestPath}}
-                </span>
-            </div>
-            <div class="item"
-                title="Number of movements needed to go from start to end."
-            >
-                Number of movements:
-                <span class="computed">
-                    {{nbMovements}}
-                </span>
-            </div>
-            <div class="item"
-                title="Number of movements where result depends of speed of moving the maze."
-            >
-                Number of complex movements:
-                <span class="computed">
-                    {{result.complexMovements}}
-                </span>
-            </div>
-            <div class="item"
-                title="Number of movements where it is quite hard to do (such as diagonal move)."
-            >
-                Number of hard movements:
-                <span class="computed">
-                    {{result.hardMovements}}
+                    {{result.nbCellAccessible}}
                 </span>
             </div>
 
-            <details class="item movements">
-                <summary>
-                    Movements:
-                </summary>
-                <p>
-                    {{readableMovements}}
-                </p>
-            </details>
-        </template>
-        <Weight
-            :show="showWeight"
-            :weight="weight"
-            @input="changeWeight"
-            @confirm="showWeight=false;"
-            @reset="getFromStore(true)"
-        />
+            <template v-if="isResolvable">
+                <div class="item"
+                    title="Minimum number of cells to go through from start to end."
+                >
+                    Shortest path:
+                    <span class="computed">
+                        {{result.nbShortestPath}}
+                    </span>
+                </div>
+                <div class="item"
+                    title="Number of movements needed to go from start to end."
+                >
+                    Number of movements:
+                    <span class="computed">
+                        {{nbMovements}}
+                    </span>
+                </div>
+                <div class="item"
+                    title="Number of movements where result depends of speed of moving the maze."
+                >
+                    Number of complex movements:
+                    <span class="computed">
+                        {{result.complexMovements}}
+                    </span>
+                </div>
+                <div class="item"
+                    title="Number of movements where it is quite hard to do (such as diagonal move)."
+                >
+                    Number of hard movements:
+                    <span class="computed">
+                        {{result.hardMovements}}
+                    </span>
+                </div>
+
+                <details class="item movements">
+                    <summary>
+                        Movements:
+                    </summary>
+                    <p>
+                        {{readableMovements}}
+                    </p>
+                </details>
+            </template>
+            <Weight
+                :show="showWeight"
+                :weight="weight"
+                @input="changeWeight"
+                @confirm="showWeight=false;"
+                @reset="getFromStore(true)"
+            />
+        </div>
     </template>
     <div v-else
         class="defaultMsg"
@@ -115,6 +119,10 @@ export default {
                 return {};
             },
         },
+        simpleDisplay: {
+            type: Boolean,
+            default: false,
+        }
     },
     data: function() {
         this.getFromStore();
@@ -254,5 +262,12 @@ meter {
 .percentInfo {
     font-size: 0.8em;
     margin-left: 1em;
+}
+.minimize meter {
+    height: 0.75em;
+    width: 65%;
+}
+.minimize .percentInfo {
+    font-size: 0.6em;
 }
 </style>

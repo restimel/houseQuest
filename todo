@@ -3,10 +3,8 @@ liste BUgs && todo
 *II* display
     → do not display existing result
     → watch similar result
-*II* improve perfoamnce do not recompute result while its already computed
 *III* filter results by different criteria / paginate other results
 *III* previous defaultInfo selection not displayed at start
 *III* Keep results in memory (when switching tabs)
 *IV* performance optimization → quick search (no A*)
 *IV* performance optimization → check start and check end (sortcut house)
-*IV* explain why compute is disabled (nothing more to compute)
