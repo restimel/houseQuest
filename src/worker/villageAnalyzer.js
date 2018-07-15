@@ -659,7 +659,7 @@ async function compose(data, id) {
                 sendResult({
                     maze: maze,
                     houses: possibilities.map((possibility) => possibility.houses[possibility.idxHouse] + '§' + possibility.orientations[possibility.idxOrientation]),
-                    // result: result,
+                    result: result,
                 });
                 hasSend = true;
             }

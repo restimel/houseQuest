@@ -6,12 +6,18 @@
         :changeDisplay="false"
         readonly
     />
+    <VillageAnalyze
+        :result="analyzedResult"
+        simpleDisplay
+        class="analyzeInformation"
+    />
 </div>
 </template>
 
 <script>
 import Village from '@/models/village';
 import VillageView from '@/components/village/SvgVillage';
+import VillageAnalyze from '@/components/village/VillageAnalyze';
 
 export default {
     name: 'VillageResult',
@@ -38,6 +44,9 @@ export default {
         this.updateResult();
     },
     computed: {
+        analyzedResult: function() {
+            return this.result.result;
+        },
     },
     methods: {
         updateResult: function() {
@@ -59,9 +68,14 @@ export default {
     },
     components: {
         Village: VillageView,
+        VillageAnalyze: VillageAnalyze,
     },
 };
 </script>
 
 <style scoped>
+.analyzeInformation {
+    margin-top: -1em;
+    padding: 0 0.4em;
+}
 </style>
