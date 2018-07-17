@@ -352,7 +352,7 @@ export default {
 
             const oldSpeed = this.conf.timeByMaze; // (in maze / ms)
             const speed = this.speed * 1000; // (in M maze / s → maze / ms)
-            this.conf.timeByMaze = (oldSpeed + speed) / 2;
+            this.conf.timeByMaze = (oldSpeed * 2 + speed) / 3;
             if (this.status === 'running') {
                 this.status = 'Complete';
             }
