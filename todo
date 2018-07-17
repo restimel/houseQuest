@@ -1,6 +1,5 @@
-liste BUgs && todo
+list of Bugs && Todo
 
-*I* 4 more entrances
 *II* empty house in compositor
 *II* Filtering on difficulty percent
 *II* output in CSV
@@ -8,6 +7,7 @@ liste BUgs && todo
     → do not display existing result
     → watch similar result (compute antropy)
 *III* filter results by different criteria / paginate other results
-*III* previous defaultInfo selection not displayed at start
-*III* Keep results in memory (when switching tabs)
+*III* See path in summary result (only shortest path)
+*III* bug: previous defaultInfo selection not displayed at start
+*III* Keep results in memory (when switching tabs) (indexedDB ?)
 *IV* performance optimization → quick search (no A*)
