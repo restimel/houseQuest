@@ -65,6 +65,7 @@
             <div class="controls-compute">
                 <button v-if="!isRuning"
                     :disabled="!canCompute"
+                    :title="statusCompute"
                     @click.stop="compute"
                 >
                     Compute <span v-show="continueComputation">(continue)</span>
@@ -177,7 +178,17 @@ export default {
     },
     computed: {
         canCompute: function() {
-            return this.nbPossibilities > this.offset;
+            return this.nbPossibilities > this.offset && this.village.starts.length && this.village.ends.length;
+        },
+        statusCompute: function() {
+            let text = '';
+            if (this.nbPossibilities <= this.offset) {
+                text = 'All possibilities are already computed';
+            } else
+            if (!this.village.starts.length || !this.village.ends.length) {
+                text = 'There is no possibility to find solvable configuration';
+            }
+            return text;
         },
         speed: function() {
             const offset = this.offset;
@@ -286,8 +297,8 @@ export default {
 
             await Promise.all(promises);
             worker('composition', {
-                starts: confVillage.starts,
-                ends: confVillage.ends,
+                starts: this.village.starts,
+                ends: this.village.ends,
                 nbPossibilities: this.nbPossibilities,
                 infos: this.village.infos,
                 defaultInfo: defaultInfo,
@@ -392,6 +403,9 @@ export default {
     watch: {
         watcherInfo: function() {
             this.updateInfo();
+        },
+        'village.disablingOutsideCells': function() {
+            this.offset = 0;
         },
     },
     filters: {

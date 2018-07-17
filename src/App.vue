@@ -56,6 +56,9 @@ summary {
 summary:focus {
     outline: none;
 }
+.interactive-area {
+    cursor: pointer;
+}
 </style>
 
 <style>
@@ -71,6 +74,8 @@ summary:focus {
     --start-border: rgb(0, 150, 0);
     --end-background: rgb(250, 150, 150);
     --end-border: rgb(250, 0, 0);
+    --cell-background-disabled: rgb(170, 170, 170);
+    --cell-border-disabled: rgb(50, 50, 50);
     --active-link: rgb(200, 200, 0);
     --menu-text-color: rgb(250, 250, 250);
     --village-border: rgb(150, 150, 150);
