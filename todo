@@ -1,10 +1,13 @@
 liste BUgs && todo
 
+*I* 4 more entrances
+*II* empty house in compositor
+*II* Filtering on difficulty percent
+*II* output in CSV
 *II* display
     → do not display existing result
-    → watch similar result
+    → watch similar result (compute antropy)
 *III* filter results by different criteria / paginate other results
 *III* previous defaultInfo selection not displayed at start
 *III* Keep results in memory (when switching tabs)
 *IV* performance optimization → quick search (no A*)
-*IV* performance optimization → check start and check end (sortcut house)
