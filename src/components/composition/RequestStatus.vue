@@ -43,12 +43,17 @@ export default {
             type: Village,
             require: true,
         },
+        list: {
+            type: Array,
+        },
     },
     data: function() {
-        this.refresh();
+        if (this.list) {
+            this.refresh();
+        }
         return {
             conf: conf,
-            houseList: [],
+            houseList: this.list || [],
         };
     },
     computed: {

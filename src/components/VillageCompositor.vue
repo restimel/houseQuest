@@ -38,10 +38,12 @@
             />
             <HouseSelector
                 :selected="selectedHouse"
+                :list="houseList"
                 @change="changeHouse"
             />
             <RequestStatus
                 :village="village"
+                :list="houseList"
                 @nbPossibilities="changeNbPossibilities"
             />
         </section>
@@ -142,6 +144,24 @@ import worker from '@/core/worker';
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
 
+const emptyCell = {
+    u: true,
+    d: true,
+    l: true,
+    r: true,
+};
+const HOUSE_EMPTY_NAME = '_empty_';
+const HOUSE_EMPTY_ID = '_empty_';
+const HOUSE_EMPTY = {
+    name: HOUSE_EMPTY_ID,
+    maze: [
+        [emptyCell, emptyCell, emptyCell, emptyCell],
+        [emptyCell, emptyCell, emptyCell, emptyCell],
+        [emptyCell, emptyCell, emptyCell, emptyCell],
+        [emptyCell, emptyCell, emptyCell, emptyCell],
+    ],
+};
+
 export default {
     name: 'VillageEditor',
     data: function() {
@@ -236,6 +256,7 @@ export default {
         refresh: async function() {
             const list = await store.house.getAll();
             this.houseList = list.map(v => v.name);
+            this.houseList.push(HOUSE_EMPTY_NAME);
             this.village.get('§¤§infos§', true);
         },
         selectHouse: function(house, idx) {
@@ -276,8 +297,6 @@ export default {
 
             const houses = new Set();
 
-            this.startCompute = performance.now();
-
             this.village.infos.forEach((info) => info.houses.forEach((house) => houses.add(house)));
             const defaultInfo = Object.assign({}, this.village.defaultInfo);
             if (defaultInfo.houses.length) {
@@ -291,11 +310,18 @@ export default {
                 defaultInfo.orientations = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
             }
             const mazes = {};
-            const promises = Array.from(houses, (house) => store.house.get(house).then(h => mazes[house] = h));
+            const hasEmpty = houses.has(HOUSE_EMPTY_NAME);
+            if (hasEmpty) {
+                houses.delete(HOUSE_EMPTY_NAME);
+                mazes[HOUSE_EMPTY_ID] = HOUSE_EMPTY;
+            }
+            const promises = Array.from(houses, (house) => store.house.get(house).then(h => mazes[house] = h).catch((e) => console.info('There has been an error:', e)));
 
             this.status = 'running';
 
             await Promise.all(promises);
+
+            this.startCompute = performance.now();
             worker('composition', {
                 starts: this.village.starts,
                 ends: this.village.ends,

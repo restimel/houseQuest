@@ -28,8 +28,8 @@
             />
 
             <g v-for="start of starts" :key="'start-'+start"
-                @click="village.toggleOutsideCell(start)"
-                class="interactive-area"
+                @click="toggleOutsideCell(start)"
+                class="{'interactive-area': !readonly}"
             >
                 <rect
                     class="villageStart"
@@ -47,7 +47,7 @@
                 />
             </g>
             <g v-for="end of ends" :key="'end-'+end"
-                @click="village.toggleOutsideCell(end)"
+                @click="toggleOutsideCell(end)"
                 class="interactive-area"
             >
                 <rect
@@ -357,6 +357,11 @@ export default {
         },
         selectHouse: function(house, idx) {
             this.$emit('selection', house, idx);
+        },
+        toggleOutsideCell: function(cell) {
+            if (!this.readonly) {
+                this.village.toggleOutsideCell(cell);
+            }
         },
     },
     watch: {

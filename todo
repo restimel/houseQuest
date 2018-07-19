@@ -1,13 +1,12 @@
 list of Bugs && Todo
 
-*II* empty house in compositor
 *II* Filtering on difficulty percent
 *II* output in CSV
-*II* display
+*II* See path in summary result (only shortest path)
+*III* display
     → do not display existing result
     → watch similar result (compute antropy)
 *III* filter results by different criteria / paginate other results
-*III* See path in summary result (only shortest path)
 *III* bug: previous defaultInfo selection not displayed at start
 *III* Keep results in memory (when switching tabs) (indexedDB ?)
 *IV* performance optimization → quick search (no A*)
