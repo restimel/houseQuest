@@ -10,6 +10,7 @@ const Configuration = Vue.component('Configuration', {
             timeByMaze: 5000, // nb by ms
             defaultInfo: null,
             infos: [],
+            resultLimitation: 1500,
 
             isLoaded: store.configuration.getAll().then(this.load.bind(this)),
         };
@@ -45,6 +46,9 @@ const Configuration = Vue.component('Configuration', {
         },
         defaultInfo: function () {
             this.updater('defaultInfo');
+        },
+        resultLimitation: function () {
+            this.updater('resultLimitation');
         },
     },
 });

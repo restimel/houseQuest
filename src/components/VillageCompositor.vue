@@ -193,7 +193,6 @@ export default {
         });
 
         this.villageComputedShowList = [];
-        this.resultLimitation = 1500;
         this.resultDisplayLimitation = 20;
 
         return {
@@ -215,6 +214,7 @@ export default {
             startCompute: -1,
             status: 'not started',
             showRemoveResult: false,
+            resultLimitation: conf.resultLimitation,
 
             selectedResult: {},
         };
