@@ -507,7 +507,7 @@ function Astar({
  * Compose
  */
 
-const bashTime = 900;
+const bashTime = 1500;
 function compose(data, id) {
     // preparation
     const {
@@ -701,11 +701,12 @@ function compose(data, id) {
     }
 
     function runBash(id) {
-        let hasSend = false;
         if (id !== currentResult.id) {
             return finish();
         }
         const time = performance.now();
+        const responses = [];
+        const timeLimit = startOffset === nbTested ? bashTime / 2 : bashTime;
 
         do {
             let maze;
@@ -726,18 +727,18 @@ function compose(data, id) {
 
             const result = analyze({ maze, starts, ends });
             if (result.nbShortestPath < nbMaxCell) {
-                sendResult({
+                responses.push({
                     maze: maze,
                     houses: possibilities.map((possibility) => possibility.houses[possibility.idxHouse] + '§' + possibility.orientations[possibility.idxOrientation]),
                     result: result,
                 });
-                hasSend = true;
             }
-        } while (performance.now() - time < bashTime);
+        } while (performance.now() - time < timeLimit);
 
-        if (!hasSend) {
-            sendResult();
-        }
+        sendResult({
+            results: responses
+        });
+
         setTimeout(runBash, 1, id);
     }
 

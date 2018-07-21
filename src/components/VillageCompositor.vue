@@ -62,6 +62,19 @@
                 <h2>
                     Result
                     <span v-if="villageComputed.length > 0">({{villageComputed.length}})</span>
+                    <span v-show="villageComputedDisplayed.length > 0"
+                        class="fa fa-trash interactive-area"
+                        title="Clear all results"
+                        @click="showRemoveResult = true"
+                    ></span>
+                    <AskDialog
+                        title="Clear all results"
+                        :show="showRemoveResult"
+                        @close="showRemoveResult=false"
+                        @confirm="villageComputed=[];showRemoveResult=false"
+                    >
+                        <span>All results will be lost. Are you sure to continue?</span>
+                    </AskDialog>
                 </h2>
             </header>
             <div class="controls-compute">
@@ -85,7 +98,7 @@
         </div>
         <div slot="body" class="sharedArea resultArea">
             <div class="village-result">
-                <span v-if="villageComputed.length === 0"
+                <span v-show="villageComputedDisplayed.length === 0"
                     class="noResult"
                 >
                     No results found yet :/
@@ -173,7 +186,12 @@ export default {
             },
         });
 
+        this.villageComputedShowList = [];
+        this.resultLimitation = 1500;
+        this.resultDisplayLimitation = 20;
+
         return {
+            conf: conf,
             isRequestOpen: true,
             isResultOpen: false,
             village: village,
@@ -187,11 +205,10 @@ export default {
             isStopping: false,
             offset: 0,
             villageComputed: [],
-            resultLimitation: 50,
             villageComputedNb: 0,
             startCompute: -1,
-            conf: conf,
             status: 'not started',
+            showRemoveResult: false,
 
             selectedResult: {},
         };
@@ -230,7 +247,15 @@ export default {
             return this.canCompute && this.offset > 0;
         },
         villageComputedDisplayed: function() {
-            return this.villageComputed.slice(0, this.resultLimitation);
+            const showList = this.villageComputedShowList;
+            const showLng = showList.length;
+            const computedLng = this.villageComputed.length;
+            const limitation = this.resultDisplayLimitation;
+            if (showLng < limitation && computedLng > showLng) {
+                const items = this.villageComputed.slice(showLng, limitation);
+                showList.push(...items);
+            }
+            return showList;
         },
     },
     created: function() {
@@ -347,7 +372,7 @@ export default {
             }
         },
         onComputeProgress: function(data) {
-            const {progress, maze, houses, offset} = data;
+            const {progress, results, offset} = data;
             const {computeProgress: currentProgress, offset: currentOffset} = this;
 
             if (progress > currentProgress) {
@@ -357,28 +382,29 @@ export default {
                 this.offset = offset;
             }
 
-            if (houses || maze) {
-                const houseId = houses.join('');
-                if (this.villageComputed.find(v => v.houseId === houseId)) {
-                    // already displayed
-                    return;
-                }
+            if (results) {
+                results.forEach((response) => {
+                    const {maze, houses, result} = response;
+                    const houseId = houses.join('');
+                    if (this.villageComputed.find(v => v.houseId === houseId)) {
+                        // already displayed
+                        return;
+                    }
 
-                this.villageComputedNb++;
-                if (this.villageComputedNb >= this.resultLimitation) {
-                    this.status = 'Limit of results reached';
-                    this.stopCompute();
-                }
+                    this.villageComputedNb++;
+                    if (this.villageComputedNb >= this.resultLimitation) {
+                        this.status = 'Limit of results reached';
+                        this.stopCompute();
+                    }
 
-                setTimeout(() => {
                     this.villageComputed.push({
                         houseId,
                         maze,
                         houses,
-                        result: data.result,
+                        result: result,
                         difficulty: data.difficulty,
                     });
-                }, 10);
+                });
             }
         },
         onComputeFinished: function(data) {
@@ -422,6 +448,7 @@ export default {
                 if (idx !== -1) {
                     this.villageComputed.splice(idx, 1);
                     this.villageComputedNb--;
+                    this.villageComputedShowList = [];
                 }
             }
         }
