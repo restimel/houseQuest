@@ -49,6 +49,16 @@
         </section>
     </DetailsCustom>
 
+
+    <AskDialog
+        title="Clear all results"
+        saveButton="Clear"
+        :show="showRemoveResult"
+        @close="showRemoveResult=false"
+        @confirm="clearResult"
+    >
+        <span>All results will be lost. Are you sure to continue?</span>
+    </AskDialog>
     <DetailsCustom
         class="result details"
         :open="isResultOpen"
@@ -62,19 +72,12 @@
                 <h2>
                     Result
                     <span v-if="villageComputed.length > 0">({{villageComputed.length}})</span>
-                    <span v-show="villageComputedDisplayed.length > 0"
-                        class="fa fa-trash interactive-area"
+                    <Icon v-show="villageComputedDisplayed.length > 0"
+                        icon="trash-alt"
+                        class="interactive-area"
                         title="Clear all results"
-                        @click="showRemoveResult = true"
-                    ></span>
-                    <AskDialog
-                        title="Clear all results"
-                        :show="showRemoveResult"
-                        @close="showRemoveResult=false"
-                        @confirm="villageComputed=[];showRemoveResult=false"
-                    >
-                        <span>All results will be lost. Are you sure to continue?</span>
-                    </AskDialog>
+                        @click.stop="showRemoveResult = true"
+                    />
                 </h2>
             </header>
             <div class="controls-compute">
@@ -83,6 +86,7 @@
                     :title="statusCompute"
                     @click.stop="compute"
                 >
+                    <Icon icon="calculator"/>
                     Compute <span v-show="continueComputation">(continue)</span>
                 </button>
                 <button v-else
@@ -127,11 +131,13 @@
                 <button
                     @click="removeResult"
                 >
+                    <Icon icon="trash-alt" />
                     Remove from result
                 </button>
                 <button
                     @click="save"
                 >
+                    <Icon icon="save" />
                     Save
                 </button>
             </div>
@@ -451,7 +457,12 @@ export default {
                     this.villageComputedShowList = [];
                 }
             }
-        }
+        },
+        clearResult: function() {
+            this.villageComputed=[];
+            this.showRemoveResult=false;
+            this.villageComputedShowList = [];
+        },
     },
     watch: {
         watcherInfo: function() {

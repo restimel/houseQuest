@@ -16,7 +16,7 @@
             :value="name"
         ></option>
     </datalist>
-    
+
     <House :house="house" />
     <aside class="options">
         Options
@@ -26,16 +26,19 @@
             :disabled="!title"
             @click="checkRemove"
         >
+            <Icon icon="trash-alt" />
             Remove
         </button>
         <button
             @click="init"
         >
+            <Icon icon="eraser" />
             Reset
         </button>
         <button
             @click="save"
         >
+            <Icon icon="save" />
             Save
         </button>
         <AskDialog
@@ -114,7 +117,7 @@ export default {
         },
         refresh: async function() {
             const list = await store.house.getAll()
-            
+
             this.houseList = list.map(v => v.name);
         },
         save: async function() {

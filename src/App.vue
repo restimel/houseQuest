@@ -9,6 +9,7 @@
 import Vue from 'vue';
 import Menu from '@/components/Menu';
 import conf from '@/models/configurations';
+import '@/fontAwesome';
 
 export default {
     name: 'App',
@@ -58,6 +59,9 @@ summary:focus {
 }
 .interactive-area {
     cursor: pointer;
+}
+.interactive-area:hover {
+    color: var(--active-link);
 }
 </style>
 
