@@ -426,6 +426,8 @@ function analyze({maze, starts, ends}) {
         movements: movements,
         complexMovements: complexMovements,
         hardMovements: hardMovements,
+        difficulty: 0,
+        difficultyPercent: '0 %',
     };
 }
 

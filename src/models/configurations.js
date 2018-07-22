@@ -3,6 +3,12 @@ import store from '@/core/indexedDB';
 
 const Configuration = Vue.component('Configuration', {
     data: function() {
+        this.toWatch = [
+            'theme', 'villageName', 'houseName', 'timeByMaze',
+            'defaultInfos', 'infos', 'resultLimitation',
+            'CSVseparator', 'CSVcolumns'
+        ];
+
         return {
             theme: 'default',
             villageName: '',
@@ -11,9 +17,16 @@ const Configuration = Vue.component('Configuration', {
             defaultInfo: null,
             infos: [],
             resultLimitation: 1500,
+            CSVseparator: ',',
+            CSVcolumns: ['result.difficultyPercent', 'houses'],
 
             isLoaded: store.configuration.getAll().then(this.load.bind(this)),
         };
+    },
+    created: function() {
+        this.toWatch.forEach((attribute) => {
+            this.$watch(attribute, () => this.updater(attribute));
+        });
     },
     methods: {
         load: function(data) {
@@ -26,29 +39,6 @@ const Configuration = Vue.component('Configuration', {
                 type: attribute,
                 data: this[attribute],
             });
-        },
-    },
-    watch: {
-        theme: function()  {
-            this.updater('theme');
-        },
-        villageName: function () {
-            this.updater('villageName');
-        },
-        houseName: function () {
-            this.updater('houseName');
-        },
-        timeByMaze: function () {
-            this.updater('timeByMaze');
-        },
-        infos: function () {
-            this.updater('infos');
-        },
-        defaultInfo: function () {
-            this.updater('defaultInfo');
-        },
-        resultLimitation: function () {
-            this.updater('resultLimitation');
         },
     },
 });

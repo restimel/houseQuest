@@ -221,7 +221,8 @@ export default {
     },
     watch: {
         difficultyPercent: function() {
-            this.result.difficulty = this.difficultyPercent;
+            this.result.difficultyPercent = this.difficultyPercent;
+            this.result.difficulty = this.difficulty;
         },
     },
     components: {

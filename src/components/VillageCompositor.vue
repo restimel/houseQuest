@@ -49,16 +49,6 @@
         </section>
     </DetailsCustom>
 
-
-    <AskDialog
-        title="Clear all results"
-        saveButton="Clear"
-        :show="showRemoveResult"
-        @close="showRemoveResult=false"
-        @confirm="clearResult"
-    >
-        <span>All results will be lost. Are you sure to continue?</span>
-    </AskDialog>
     <DetailsCustom
         class="result details"
         :open="isResultOpen"
@@ -130,7 +120,7 @@
             <div class="controls">
                 <button
                     :disabled="villageComputed.length === 0"
-                    @click="exportToCSV"
+                    @click="showExport=true"
                 >
                     <Icon icon="file-import" />
                     Export to csv
@@ -152,6 +142,21 @@
             </div>
         </div>
     </DetailsCustom>
+
+    <AskDialog
+        title="Clear all results"
+        saveButton="Clear"
+        :show="showRemoveResult"
+        @close="showRemoveResult=false"
+        @confirm="clearResult"
+    >
+        <span>All results will be lost. Are you sure to continue?</span>
+    </AskDialog>
+    <ExportVillages
+        :show="showExport"
+        :list="villageComputed"
+        @close="showExport=false"
+    />
 </div>
 </template>
 
@@ -166,6 +171,7 @@ import RequestStatus from '@/components/composition/RequestStatus';
 import VillageResult from '@/components/composition/VillageResult';
 import VillageResultDetails from '@/components/composition/VillageResultDetails';
 import VillageView from '@/components/village/SvgVillage';
+import ExportVillages from '@/components/village/ExportVillages';
 import AskDialog from '@/components/AskDialog';
 import worker from '@/core/worker';
 
@@ -203,7 +209,6 @@ export default {
 
         this.villageComputedShowList = [];
         this.resultDisplayLimitation = 20;
-        this.textFile = null;
 
         return {
             conf: conf,
@@ -225,6 +230,7 @@ export default {
             status: 'not started',
             showRemoveResult: false,
             resultLimitation: conf.resultLimitation,
+            showExport: false,
 
             selectedResult: {},
         };
@@ -476,61 +482,6 @@ export default {
                 URL.revokeObjectURL(this.textFile);
             }
         },
-
-        buildURLData: function(text) {
-            /* revoke URL to avoid memory leaks */
-            if (this.textFile !== null) {
-                URL.revokeObjectURL(this.textFile);
-            }
-
-            const data = new Blob([text], {type: 'text/plain'});
-
-            this.textFile = URL.createObjectURL(data);
-            return this.textFile;
-        },
-
-        buildCSV: function(columns, list = this.villageComputed) {
-            columns.forEach((c, k, a) => {
-                if (c === 'houses') {
-                    const changes = ['houses.0', 'houses.1', 'houses.2', 'houses.3', 'houses.4', 'houses.5', 'houses.6', 'houses.7', 'houses.8'];
-                    a.splice(k, 1, ...changes);
-                }
-            });
-            let csv = columns.map(c => `"${c}"`).join(',') + '\n';
-            csv += list.map(village => {
-                console.log('village', village);
-                return columns.map(c => {
-                    const keys = c.split('.');
-                    let data = keys.reduce((value, key) => value[key], village);
-
-                    if (typeof data !== 'number') {
-                        data = `"${data}"`;
-                    }
-                    return data;
-                }).join(',');
-            }).join('\n');
-
-            return csv;
-        },
-
-        exportFile: function(text) {
-            const link = document.createElement('a');
-            link.download = 'houseQuestsResults.csv';
-            link.href = this.buildURLData(text);
-            document.body.appendChild(link);
-
-            // wait for the link to be added to the document
-            requestAnimationFrame(() => {
-                const event = new MouseEvent('click');
-                link.dispatchEvent(event);
-                document.body.removeChild(link);
-            });
-        },
-
-        exportToCSV: function() {
-            const csv = this.buildCSV(['result.difficulty', 'houses']);
-            this.exportFile(csv);
-        },
     },
     watch: {
         watcherInfo: function() {
@@ -567,6 +518,7 @@ export default {
         RequestStatus: RequestStatus,
         VillageResult: VillageResult,
         VillageResultDetails: VillageResultDetails,
+        ExportVillages: ExportVillages,
     },
 };
 </script>
@@ -669,6 +621,11 @@ progress:not([value]) {
     background-color: var(--selected-item-background);
 }
 
+dialog {
+    position: fixed;
+    top: 50%;
+    transform: translate(0, -50%);
+}
 /* progress[value]::-webkit-progress-bar {
   background-image:
 	   -webkit-linear-gradient(left,
