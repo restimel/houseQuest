@@ -60,8 +60,15 @@ summary:focus {
 .interactive-area {
     cursor: pointer;
 }
-.interactive-area:hover {
+.interactive-area:not([disabled]):hover {
     color: var(--active-link);
+}
+button {
+    cursor: pointer;
+}
+button[disabled],
+.interactive-area[disabled] {
+    cursor: not-allowed;
 }
 </style>
 

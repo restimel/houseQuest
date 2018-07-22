@@ -127,14 +127,23 @@
                 :result="selectedResult"
                 ref="villageReesultDetails"
             />
-            <div class="controls" v-show="!!selectedResult.houseId">
+            <div class="controls">
                 <button
+                    :disabled="villageComputed.length === 0"
+                    @click="exportToCSV"
+                >
+                    <Icon icon="file-import" />
+                    Export to csv
+                </button>
+                <button
+                    v-show="!!selectedResult.houseId"
                     @click="removeResult"
                 >
                     <Icon icon="trash-alt" />
                     Remove from result
                 </button>
                 <button
+                    v-show="!!selectedResult.houseId"
                     @click="save"
                 >
                     <Icon icon="save" />
@@ -194,6 +203,7 @@ export default {
 
         this.villageComputedShowList = [];
         this.resultDisplayLimitation = 20;
+        this.textFile = null;
 
         return {
             conf: conf,
@@ -462,6 +472,64 @@ export default {
             this.villageComputed=[];
             this.showRemoveResult=false;
             this.villageComputedShowList = [];
+            if (this.textFile) {
+                URL.revokeObjectURL(this.textFile);
+            }
+        },
+
+        buildURLData: function(text) {
+            /* revoke URL to avoid memory leaks */
+            if (this.textFile !== null) {
+                URL.revokeObjectURL(this.textFile);
+            }
+
+            const data = new Blob([text], {type: 'text/plain'});
+
+            this.textFile = URL.createObjectURL(data);
+            return this.textFile;
+        },
+
+        buildCSV: function(columns, list = this.villageComputed) {
+            columns.forEach((c, k, a) => {
+                if (c === 'houses') {
+                    const changes = ['houses.0', 'houses.1', 'houses.2', 'houses.3', 'houses.4', 'houses.5', 'houses.6', 'houses.7', 'houses.8'];
+                    a.splice(k, 1, ...changes);
+                }
+            });
+            let csv = columns.map(c => `"${c}"`).join(',') + '\n';
+            csv += list.map(village => {
+                console.log('village', village);
+                return columns.map(c => {
+                    const keys = c.split('.');
+                    let data = keys.reduce((value, key) => value[key], village);
+
+                    if (typeof data !== 'number') {
+                        data = `"${data}"`;
+                    }
+                    return data;
+                }).join(',');
+            }).join('\n');
+
+            return csv;
+        },
+
+        exportFile: function(text) {
+            const link = document.createElement('a');
+            link.download = 'houseQuestsResults.csv';
+            link.href = this.buildURLData(text);
+            document.body.appendChild(link);
+
+            // wait for the link to be added to the document
+            requestAnimationFrame(() => {
+                const event = new MouseEvent('click');
+                link.dispatchEvent(event);
+                document.body.removeChild(link);
+            });
+        },
+
+        exportToCSV: function() {
+            const csv = this.buildCSV(['result.difficulty', 'houses']);
+            this.exportFile(csv);
         },
     },
     watch: {
@@ -564,7 +632,6 @@ aside {
     padding-bottom: 0;
 }
 .controls button {
-    cursor: pointer;
     height: 30px;
 }
 

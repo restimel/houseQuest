@@ -122,7 +122,7 @@ export default {
         simpleDisplay: {
             type: Boolean,
             default: false,
-        }
+        },
     },
     data: function() {
         this.getFromStore();
@@ -216,6 +216,11 @@ export default {
                 data = await store.configuration.get('defaultWeight') || {};
             }
             this.weight = data.weight;
+        },
+    },
+    watch: {
+        difficultyPercent: function() {
+            this.result.difficulty = this.difficultyPercent;
         },
     },
     components: {

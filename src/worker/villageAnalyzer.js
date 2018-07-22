@@ -712,12 +712,22 @@ function compose(data, id) {
             let maze;
 
             if (startOffset !== nbTested && !nextAction()) {
+                if (responses.length) {
+                    sendResult({
+                        results: responses
+                    });
+                }
                 return finish();
             }
 
             if (++nbTested > nbToTest) {
                 // If all works correctly it should never happen
                 nbTested--;
+                if (responses.length) {
+                    sendResult({
+                        results: responses
+                    });
+                }
                 return finish();
             }
 

@@ -8,6 +8,7 @@
     />
     <VillageAnalyze
         :result="analyzedResult"
+        :village="village"
         simpleDisplay
         class="analyzeInformation"
     />
