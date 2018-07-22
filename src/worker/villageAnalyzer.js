@@ -24,6 +24,8 @@ const emptyCell = {
     l: false,
 };
 
+const EMPTY_HOUSE = '_empty_';
+
 function sendMessage(message, extend = false) {
     const msg = extend ? Object.assign({}, currentResult, message) : message;
     self.postMessage(msg);
@@ -275,8 +277,7 @@ function analyze({maze, starts, ends}) {
         return [X, Y, c, hard, nposition, dir, getId(X, Y)];
     }
 
-    function computeMovements(x, y) { //TODO all startCells
-        //TODO  Astar();
+    function computeMovements(x, y) {
         function buildState([x, y, complex, hard, position, mvt, id], cost) {
             return {
                 id: id + '-' + position.join(','),
@@ -425,6 +426,8 @@ function analyze({maze, starts, ends}) {
         movements: movements,
         complexMovements: complexMovements,
         hardMovements: hardMovements,
+        difficulty: 0,
+        difficultyPercent: '0 %',
     };
 }
 
@@ -506,8 +509,8 @@ function Astar({
  * Compose
  */
 
-const bashTime = 1000;
-async function compose(data, id) {
+const bashTime = 1500;
+function compose(data, id) {
     // preparation
     const {
         mazes, mazeWidth, mazeHeight,
@@ -519,8 +522,9 @@ async function compose(data, id) {
     } = data;
     const nbMaxCell = mazeWidth * mazeHeight;
     let startOffset = offset;
+    const cellExt = starts.concat(ends);
 
-    const houses = new Map();
+    const housesStore = new Map();
     const houseUsed = new Set();
 
     let nbTested = startOffset;
@@ -548,11 +552,14 @@ async function compose(data, id) {
             x: Math.floor(index / mazeWidthHouse),
             y: index % mazeWidthHouse,
             shortcutCost: orientations.length,
+            orientationShortCut: 1,
         };
     });
     possibilities.reduceRight((previous, current, idx) => {
         if (previous) {
-            current.shortcutCost *= previous.shortcutCost * previous.houses.length;
+            const previousCost = previous.shortcutCost * previous.houses.length;
+            current.orientationShortCut = previousCost;
+            current.shortcutCost *= previousCost;
         }
         // set indexes to the correct values (when a starting offset is given)
         if (_offsetIdx) {
@@ -609,9 +616,60 @@ async function compose(data, id) {
                 }
                 continue;
             }
-            houseUsed.add(houseName);
+            if (houseName !== EMPTY_HOUSE) {
+                houseUsed.add(houseName);
+            }
         }
         startOffset = nbTested;
+    }
+
+    // prepare validation functions
+    let nextStartIdx = 0;
+    let nextFinishIdx = 0;
+
+    const validationStart = starts.map( cell => {
+        const [f, possibilityIdx] = getCellChecker(cell);
+        nextStartIdx = Math.max(nextStartIdx, possibilityIdx);
+
+        return f;
+    });
+    const validationFinish = ends.map(cell => {
+        const [f, possibilityIdx] = getCellChecker(cell);
+        nextFinishIdx = Math.max(nextFinishIdx, possibilityIdx);
+
+        return f;
+    });
+    function getCellChecker(cell) {
+        const [x, y] = cell.split(', ');
+        let orientation = '';
+        let X = +x;
+        let Y = +y;
+
+        if (X < 0) {
+            X = 0;
+            orientation = 'l';
+        } else
+            if (X >= mazeWidth) {
+                X = mazeWidth - 1;
+                orientation = 'r';
+            }
+        if (Y < 0) {
+            Y = 0;
+            orientation = 'u';
+        } else
+            if (Y >= mazeHeight) {
+                Y = mazeHeight - 1;
+                orientation = 'd';
+            }
+
+        const possibilityIdx = Math.floor(((X * mazeHeight) + Y) / (houseWidth * houseHeight));
+        const cellX = X % houseWidth;
+        const cellY = Y % houseHeight;
+
+        return [buildChecker(cellX, cellY, possibilityIdx, orientation), possibilityIdx];
+    }
+    function buildChecker(cellX, cellY, possibilityIdx, orientation) {
+        return () => readCell(cellX, cellY, possibilityIdx)[orientation];
     }
 
     // start looping
@@ -632,21 +690,48 @@ async function compose(data, id) {
         }, true);
     }
 
+    function readCell(x, y, possibilityIdx) {
+        const possibility = possibilities[possibilityIdx];
+        const house = possibility.houses[possibility.idxHouse];
+        const orientation = possibility.orientations[possibility.idxOrientation];
+        const maze = getHouse(house, orientation).maze;
+
+        const row = maze[x];
+        let cell = row && row[y];
+
+        return cell || {};
+    }
+
     function runBash(id) {
-        let hasSend = false;
         if (id !== currentResult.id) {
             return finish();
         }
         const time = performance.now();
+        let responses = [];
+        const timeLimit = startOffset === nbTested ? bashTime / 2 : bashTime;
 
         do {
             let maze;
 
             if (startOffset !== nbTested && !nextAction()) {
+                if (responses.length) {
+                    sendResult({
+                        results: responses
+                    });
+                    responses = null;
+                }
                 return finish();
             }
 
-            if (++nbTested >= nbToTest) {
+            if (++nbTested > nbToTest) {
+                // If all works correctly it should never happen
+                nbTested--;
+                if (responses.length) {
+                    sendResult({
+                        results: responses
+                    });
+                    responses = null;
+                }
                 return finish();
             }
 
@@ -656,59 +741,89 @@ async function compose(data, id) {
 
             const result = analyze({ maze, starts, ends });
             if (result.nbShortestPath < nbMaxCell) {
-                sendResult({
-                    maze: maze,
+                responses.push({
                     houses: possibilities.map((possibility) => possibility.houses[possibility.idxHouse] + '§' + possibility.orientations[possibility.idxOrientation]),
                     result: result,
                 });
-                hasSend = true;
             }
-        } while (performance.now() - time < bashTime);
+        } while (performance.now() - time < timeLimit);
 
-        if (!hasSend) {
-            sendResult();
-        }
+        sendResult({
+            results: responses
+        });
+
+        responses = null;
         setTimeout(runBash, 1, id);
     }
 
     function nextAction(index = possibilities.length - 1) {
         let current = possibilities[index];
-        // upgrade to next orientations
-        if (current.idxOrientation < current.orientations.length - 1) {
-            current.idxOrientation++;
-        } else {
-            current.idxOrientation = 0;
+        let validationOk = false;
 
-            let ok = false;
-            while (!ok) {
-                ok = true;
-                // upgrade to next House
-                if (current.idxHouse < current.houses.length - 1) {
-                    current.idxHouse++;
-                } else {
-                    current.idxHouse = 0;
-                    // upgrade next possibility
-                    if (index > 0) {
-                        if (!nextAction(index - 1)) {
+        while (!validationOk) {
+            validationOk = true;
+
+            const houseName = current.houses[current.idxHouse];
+            const nbOrientations = current.orientations.length - 1;
+
+            // upgrade to next orientations
+            if (houseName !== EMPTY_HOUSE && current.idxOrientation < nbOrientations) {
+                current.idxOrientation++;
+            } else {
+                nbTested += current.orientationShortCut * (nbOrientations - current.idxOrientation);
+                current.idxOrientation = 0;
+
+                let ok = false;
+                while (!ok) {
+                    ok = true;
+
+                    // upgrade to next House
+                    if (current.idxHouse < current.houses.length - 1) {
+                        current.idxHouse++;
+                    } else {
+                        current.idxHouse = 0;
+                        // upgrade next possibility
+                        if (index > 0) {
+                            if (!nextAction(index - 1)) {
+                                return false;
+                            }
+                        } else {
                             return false;
                         }
-                    } else {
-                        return false;
                     }
-                }
 
-                if (useOnce) {
-                    const houseUsed = new Set();
-                    for (let idx = 0; idx <= index; idx++) {
-                        const possibility = possibilities[idx];
-                        houseUsed.add(possibility.houses[possibility.idxHouse]);
-                    }
-                    if (houseUsed.size <= index) {
-                        nbTested += current.shortcutCost;
-                        ok = false;
+                    if (useOnce) {
+                        const houseUsed = new Set();
+                        for (let idx = 0; idx <= index; idx++) {
+                            const possibility = possibilities[idx];
+                            const houseName = possibility.houses[possibility.idxHouse];
+                            if (houseName !== EMPTY_HOUSE) {
+                                if (houseUsed.has(houseName)) {
+                                    ok = false;
+                                    break;
+                                }
+                                houseUsed.add(houseName);
+                            }
+                        }
+
+                        if (!ok) {
+                            nbTested += current.shortcutCost;
+                        }
                     }
                 }
-            };
+            }
+
+            // check cells
+            if (index === nextStartIdx) {
+                validationOk = validationStart.some(validation => validation());
+            }
+            if (validationOk && index === nextFinishIdx) {
+                validationOk = validationFinish.some(validation => validation());
+            }
+
+            if (!validationOk) {
+                nbTested += current.orientationShortCut;
+            }
         }
 
         return true;
@@ -716,15 +831,13 @@ async function compose(data, id) {
 
     function buildMaze() {
         const maze = _initMaze(mazeWidth, mazeHeight);
-        // const houseUsed = new Set();
-        const ext = starts.concat(ends);
 
-        function getCell(x, y) {
+        function getCell(x, y, maze) {
             const row = maze[x];
             let cell = row && row[y];
             if (!cell) {
                 const id = [x, y].join(', ');
-                const val = !!ext.find((c) => c === id);
+                const val = !!cellExt.find((c) => c === id);
                 return {u: val, d: val, l: val, r: val};
             }
             return cell;
@@ -741,13 +854,6 @@ async function compose(data, id) {
             const orientation = info.orientations[info.idxOrientation];
             const offsetX = info.x * houseWidth;
             const offsetY = info.y * houseHeight;
-            // if (useOnce) {
-            //     if (houseUsed.has(houseName)) {
-            //         console.log('Arg', houseName, Array.from(houseUsed).join(','));
-            //         return false;
-            //     }
-            //     houseUsed.add(houseName);
-            // }
             const house = getHouse(houseName, orientation);
             const houseMaze = house.maze;
 
@@ -765,22 +871,20 @@ async function compose(data, id) {
         for (let x = 0; x < mazeX; x++) {
             for (let y = 0; y < mazeY; y++) {
                 const cell = maze[x][y];
-                if (cell.u && !getCell(x, y - 1).d) {
+                if (cell.u && !getCell(x, y - 1, maze).d) {
                     cell.u = false;
                 }
-                if (cell.d && !getCell(x, y + 1).u) {
+                if (cell.d && !getCell(x, y + 1, maze).u) {
                     cell.d = false;
                 }
-                if (cell.r && !getCell(x + 1, y).l) {
+                if (cell.r && !getCell(x + 1, y, maze).l) {
                     cell.r = false;
                 }
-                if (cell.l && !getCell(x - 1, y).r) {
+                if (cell.l && !getCell(x - 1, y, maze).r) {
                     cell.l = false;
                 }
             }
         }
-
-        // check maze
 
         return maze;
     }
@@ -788,16 +892,16 @@ async function compose(data, id) {
     function getHouse(name, orientation) {
         const key = `${name}§${orientation}`;
 
-        if (!houses.has(key)) {
+        if (!housesStore.has(key)) {
             const house = mazes[name];
             if (orientation === 'UP') {
-                houses.set(key, house);
+                housesStore.set(key, house);
             } else {
-                houses.set(key, {maze: rotateHouse(house, orientation)});
+                housesStore.set(key, {maze: rotateHouse(house, orientation)});
             }
         }
 
-        return houses.get(key);
+        return housesStore.get(key);
     }
 }
 

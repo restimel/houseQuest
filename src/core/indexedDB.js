@@ -4,7 +4,6 @@ const store = {};
 
 const dbVersion = 2;
 const dbName = 'houseMaze';
-// const tableVillage = 'village';
 const tables = [{
     name: 'village',
     keyPath: 'name',

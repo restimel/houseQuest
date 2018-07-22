@@ -37,13 +37,18 @@ export default {
                 return {};
             },
         },
+        list: {
+            type: Array,
+        },
     },
     data: function() {
-        this.refresh();
+        if (!this.list) {
+            this.refresh();
+        }
         return {
             houseNames: [],
             orientations: [],
-            houseList: [],
+            houseList: this.list || [],
             orientationOptions: [{
                 id: 'UP',
                 text: '↑',
@@ -92,6 +97,9 @@ export default {
     watch: {
         selected: function() {
             this.extractData();
+        },
+        list: function() {
+            this.houseList = this.list;
         },
     },
     components: {

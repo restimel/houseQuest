@@ -9,6 +9,7 @@
 import Vue from 'vue';
 import Menu from '@/components/Menu';
 import conf from '@/models/configurations';
+import '@/fontAwesome';
 
 export default {
     name: 'App',
@@ -56,6 +57,22 @@ summary {
 summary:focus {
     outline: none;
 }
+.interactive-area {
+    cursor: pointer;
+}
+.interactive-area:not(.disabled):hover {
+    color: var(--active-link);
+}
+button {
+    cursor: pointer;
+}
+button[disabled],
+.interactive-area.disabled {
+    cursor: not-allowed;
+}
+.interactive-area.disabled {
+    color: var(--disabled-link);
+}
 </style>
 
 <style>
@@ -71,7 +88,10 @@ summary:focus {
     --start-border: rgb(0, 150, 0);
     --end-background: rgb(250, 150, 150);
     --end-border: rgb(250, 0, 0);
-    --active-link: rgb(200, 200, 0);
+    --cell-background-disabled: rgb(170, 170, 170);
+    --cell-border-disabled: rgb(50, 50, 50);
+    --active-link: rgb(210, 200, 0);
+    --disabled-link: rgb(200, 200, 200);
     --menu-text-color: rgb(250, 250, 250);
     --village-border: rgb(150, 150, 150);
     --house-border: var(--village-border);

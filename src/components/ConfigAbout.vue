@@ -1,12 +1,14 @@
 <template>
     <section class="config-about">
         <Configuration />
+        <Information />
         <About />
     </section>
 </template>
 <script>
 import About from '@/components/configurations/About.vue';
 import Configuration from '@/components/configurations/Configuration.vue';
+import Information from '@/components/configurations/Information.vue';
 
 export default {
     name: 'ConfigAbout',
@@ -16,6 +18,7 @@ export default {
     components: {
         About: About,
         Configuration: Configuration,
+        Information: Information,
     },
 };
 

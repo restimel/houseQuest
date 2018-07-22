@@ -8,6 +8,7 @@
     />
     <VillageAnalyze
         :result="analyzedResult"
+        :village="village"
         simpleDisplay
         class="analyzeInformation"
     />
@@ -75,7 +76,6 @@ export default {
 
 <style scoped>
 .analyzeInformation {
-    margin-top: -1em;
     padding: 0 0.4em;
 }
 </style>

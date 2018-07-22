@@ -5,7 +5,7 @@ const configuration = {
     village: {
         sizeX: 3,
         sizeY: 3,
-        starts: ['-1, 5', '-1, 6'],
+        starts: ['-1, 5', '-1, 6', '5, -1', '6, -1', '5, 12', '6, 12'],
         ends: ['12, 5', '12, 6'],
     },
     house: {

@@ -39,11 +39,13 @@
             :disabled="!title"
             @click="checkRemove"
         >
+            <Icon icon="trash-alt" />
             Delete
         </button>
         <button
             @click="save"
         >
+            <Icon icon="save" />
             Save
         </button>
         <AskDialog

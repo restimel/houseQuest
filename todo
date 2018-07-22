@@ -1,10 +1,12 @@
-liste BUgs && todo
+list of Bugs && Todo
 
-*II* display
+*II* Filtering on difficulty percent
+*II* See path in summary result (only shortest path)
+*III* display
     → do not display existing result
-    → watch similar result
+    → watch similar result (compute antropy)
 *III* filter results by different criteria / paginate other results
-*III* previous defaultInfo selection not displayed at start
-*III* Keep results in memory (when switching tabs)
+*III* bug: previous defaultInfo selection not displayed at start
+*III* Keep results in memory (when switching tabs) (indexedDB ?)
+*III* Import data from CSV
 *IV* performance optimization → quick search (no A*)
-*IV* performance optimization → check start and check end (sortcut house)

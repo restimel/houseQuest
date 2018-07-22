@@ -1,6 +1,6 @@
 {
   "name": "housemaze",
-  "version": "1.0.4",
+  "version": "1.2.1",
   "description": "Game design for house maze.",
   "author": "restimel <restimel@gmail.com>",
   "private": true,
@@ -15,7 +15,11 @@
     "gh-pages": "npm version patch && git checkout gh-pages && git merge master && npm run build && sed -i 's,/static/,./static/,g' dist/index.html && sed -i \"s,new Worker(,new Worker('./'+,g\" dist/static/js/*.js && git add dist/* -f && git commit --amend && git co -"
   },
   "dependencies": {
-    "npm": "^6.0.1",
+    "@fortawesome/fontawesome-svg-core": "^1.2.1",
+    "@fortawesome/free-solid-svg-icons": "^5.1.1",
+    "@fortawesome/vue-fontawesome": "^0.1.1",
+    "i": "^0.3.6",
+    "npm": "^6.2.0",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1"
   },

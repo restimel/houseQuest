@@ -27,9 +27,13 @@
                 :height="height"
             />
 
-            <g v-for="start of starts" :key="'start-'+start">
+            <g v-for="start of starts" :key="'start-'+start"
+                @click="toggleOutsideCell(start)"
+                class="{'interactive-area': !readonly}"
+            >
                 <rect
                     class="villageStart"
+                    :class="{cellDisabled: village.disablingOutsideCells.includes(start)}"
                     :x="cellX(start)"
                     :y="cellY(start)"
                     :width="size"
@@ -42,9 +46,13 @@
                     :transform="transformArrow(start)"
                 />
             </g>
-            <g v-for="end of ends" :key="'end-'+end">
+            <g v-for="end of ends" :key="'end-'+end"
+                @click="toggleOutsideCell(end)"
+                class="interactive-area"
+            >
                 <rect
                     class="villageEnd"
+                    :class="{cellDisabled: village.disablingOutsideCells.includes(end)}"
                     :x="cellX(end)"
                     :y="cellY(end)"
                     :width="size"
@@ -350,6 +358,11 @@ export default {
         selectHouse: function(house, idx) {
             this.$emit('selection', house, idx);
         },
+        toggleOutsideCell: function(cell) {
+            if (!this.readonly) {
+                this.village.toggleOutsideCell(cell);
+            }
+        },
     },
     watch: {
         display: function() {
@@ -376,6 +389,11 @@ export default {
         fill: var(--end-background);
         stroke: var(--end-border);
         stroke-width: 1px;
+    }
+
+    .cellDisabled {
+        fill: var(--cell-background-disabled);
+        stroke: var(--cell-border-disabled);
     }
 
     .arrow {

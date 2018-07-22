@@ -7,7 +7,7 @@ import conf from '@/models/configurations';
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
 
-let workerLimitation = 5;
+let workerLimitation = 4;
 const waitWorkerRetry = 200;
 
 const Village = Vue.component('Village', {
@@ -39,7 +39,16 @@ const Village = Vue.component('Village', {
             createDate: 0,
             analyzeResult: {},
             conf: conf,
+            disablingOutsideCells: [],
         };
+    },
+    computed: {
+        starts: function() {
+            return confVillage.starts.filter(cell => !this.disablingOutsideCells.includes(cell));
+        },
+        ends: function() {
+            return confVillage.ends.filter(cell => !this.disablingOutsideCells.includes(cell));
+        },
     },
     methods: {
         get: async function(name, asDefault = false) {
@@ -128,6 +137,17 @@ const Village = Vue.component('Village', {
             result.shortestPath = new Set(result.shortestPath);
             this.analyzeResult = result;
         },
+        toggleOutsideCell: function(cell) {
+            const idx = this.disablingOutsideCells.indexOf(cell);
+
+            if (idx === -1) {
+                this.disablingOutsideCells.push(cell);
+            } else {
+                this.disablingOutsideCells.splice(idx, 1);
+            }
+
+            this._runAnalyze();
+        },
         _getInitInfo: function(isDefault = false) {
             const defaultOrientation = isDefault ? ['UP'] : [];
             return {
@@ -173,6 +193,26 @@ const Village = Vue.component('Village', {
                         this.clear();
                     }
                 }
+            }
+        },
+        _runAnalyze: function() {
+            if (!this.withoutAnalyze) {
+                const workerAnalyze = () => {
+                    if (workerLimitation > 0) {
+                        workerLimitation--;
+                        worker('analyze', {
+                            maze: this.maze,
+                            starts: this.starts,
+                            ends: this.ends,
+                        }).then((result) => {
+                            workerLimitation++;
+                            this.analyze(result);
+                        });
+                    } else {
+                        setTimeout(workerAnalyze, waitWorkerRetry);
+                    }
+                };
+                workerAnalyze();
             }
         },
     },
@@ -242,24 +282,7 @@ const Village = Vue.component('Village', {
                     maze[x][y] = cell;
                 }
             }
-            if (!this.withoutAnalyze) {
-                const workerAnalyze = () => {
-                    if (workerLimitation > 0) {
-                        workerLimitation--;
-                        worker('analyze', {
-                            maze: this.maze,
-                            starts: confVillage.starts,
-                            ends: confVillage.ends,
-                        }).then((result) => {
-                            workerLimitation++;
-                            this.analyze(result);
-                        });
-                    } else {
-                        setTimeout(workerAnalyze, waitWorkerRetry);
-                    }
-                };
-                workerAnalyze();
-            }
+            this._runAnalyze();
             this.$emit('maze_change');
         },
     },

@@ -1,7 +1,7 @@
 <template>
     <section>
         <header><h1>Configuration</h1></header>
-        <div>
+        <label class="configuration-item">
             Theme:
             <select v-model="conf.theme">
                 <option v-for="item of themes"
@@ -11,7 +11,13 @@
                     {{item.name}}
                 </option>
             </select>
-        </div>
+        </label>
+        <label class="configuration-item"
+            title="If the number of result find in the compositor reach this value, it then stops the comptation."
+        >
+            Maximum number of results:
+            <input type="number" v-model="conf.resultLimitation" min="1">
+        </label>
     </section>
 </template>
 <script>
@@ -41,5 +47,10 @@ export default {
 <style scoped>
 ul {
     text-align: left;
+}
+
+.configuration-item {
+    margin-bottom: 1em;
+    display: block;
 }
 </style>

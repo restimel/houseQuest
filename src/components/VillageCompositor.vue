@@ -38,10 +38,12 @@
             />
             <HouseSelector
                 :selected="selectedHouse"
+                :list="houseList"
                 @change="changeHouse"
             />
             <RequestStatus
                 :village="village"
+                :list="houseList"
                 @nbPossibilities="changeNbPossibilities"
             />
         </section>
@@ -60,13 +62,21 @@
                 <h2>
                     Result
                     <span v-if="villageComputed.length > 0">({{villageComputed.length}})</span>
+                    <Icon v-show="villageComputedDisplayed.length > 0"
+                        icon="trash-alt"
+                        class="interactive-area"
+                        title="Clear all results"
+                        @click.stop="showRemoveResult = true"
+                    />
                 </h2>
             </header>
             <div class="controls-compute">
                 <button v-if="!isRuning"
                     :disabled="!canCompute"
+                    :title="statusCompute"
                     @click.stop="compute"
                 >
+                    <Icon icon="calculator"/>
                     Compute <span v-show="continueComputation">(continue)</span>
                 </button>
                 <button v-else
@@ -77,12 +87,12 @@
                     <span v-else>Stopping...</span>
                 </button>
                 <progress v-show="isRuning"/>
-                <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed | dec1 }}M /s</span>
+                <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed | units }}</span>
             </div>
         </div>
         <div slot="body" class="sharedArea resultArea">
             <div class="village-result">
-                <span v-if="villageComputed.length === 0"
+                <span v-show="villageComputedDisplayed.length === 0"
                     class="noResult"
                 >
                     No results found yet :/
@@ -107,20 +117,46 @@
                 :result="selectedResult"
                 ref="villageReesultDetails"
             />
-            <div class="controls" v-show="!!selectedResult.houseId">
+            <div class="controls">
                 <button
+                    :disabled="villageComputed.length === 0"
+                    @click="showExport=true"
+                >
+                    <Icon icon="file-import" />
+                    Export to csv
+                </button>
+                <button
+                    v-show="!!selectedResult.houseId"
                     @click="removeResult"
                 >
+                    <Icon icon="trash-alt" />
                     Remove from result
                 </button>
                 <button
+                    v-show="!!selectedResult.houseId"
                     @click="save"
                 >
+                    <Icon icon="save" />
                     Save
                 </button>
             </div>
         </div>
     </DetailsCustom>
+
+    <AskDialog
+        title="Clear all results"
+        saveButton="Clear"
+        :show="showRemoveResult"
+        @close="showRemoveResult=false"
+        @confirm="clearResult"
+    >
+        <span>All results will be lost. Are you sure to continue?</span>
+    </AskDialog>
+    <ExportVillages
+        :show="showExport"
+        :list="villageComputed"
+        @close="showExport=false"
+    />
 </div>
 </template>
 
@@ -135,11 +171,30 @@ import RequestStatus from '@/components/composition/RequestStatus';
 import VillageResult from '@/components/composition/VillageResult';
 import VillageResultDetails from '@/components/composition/VillageResultDetails';
 import VillageView from '@/components/village/SvgVillage';
+import ExportVillages from '@/components/village/ExportVillages';
 import AskDialog from '@/components/AskDialog';
 import worker from '@/core/worker';
 
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
+
+const emptyCell = {
+    u: true,
+    d: true,
+    l: true,
+    r: true,
+};
+const HOUSE_EMPTY_NAME = '_empty_';
+const HOUSE_EMPTY_ID = '_empty_';
+const HOUSE_EMPTY = {
+    name: HOUSE_EMPTY_ID,
+    maze: [
+        [emptyCell, emptyCell, emptyCell, emptyCell],
+        [emptyCell, emptyCell, emptyCell, emptyCell],
+        [emptyCell, emptyCell, emptyCell, emptyCell],
+        [emptyCell, emptyCell, emptyCell, emptyCell],
+    ],
+};
 
 export default {
     name: 'VillageEditor',
@@ -152,7 +207,11 @@ export default {
             },
         });
 
+        this.villageComputedShowList = [];
+        this.resultDisplayLimitation = 20;
+
         return {
+            conf: conf,
             isRequestOpen: true,
             isResultOpen: false,
             village: village,
@@ -166,18 +225,29 @@ export default {
             isStopping: false,
             offset: 0,
             villageComputed: [],
-            resultLimitation: 50,
             villageComputedNb: 0,
             startCompute: -1,
-            conf: conf,
             status: 'not started',
+            showRemoveResult: false,
+            resultLimitation: conf.resultLimitation,
+            showExport: false,
 
             selectedResult: {},
         };
     },
     computed: {
         canCompute: function() {
-            return this.nbPossibilities > this.offset;
+            return this.nbPossibilities > this.offset && this.village.starts.length && this.village.ends.length;
+        },
+        statusCompute: function() {
+            let text = '';
+            if (this.nbPossibilities <= this.offset) {
+                text = 'All possibilities are already computed';
+            } else
+            if (!this.village.starts.length || !this.village.ends.length) {
+                text = 'There is no possibility to find solvable configuration';
+            }
+            return text;
         },
         speed: function() {
             const offset = this.offset;
@@ -199,7 +269,15 @@ export default {
             return this.canCompute && this.offset > 0;
         },
         villageComputedDisplayed: function() {
-            return this.villageComputed.slice(0, this.resultLimitation);
+            const showList = this.villageComputedShowList;
+            const showLng = showList.length;
+            const computedLng = this.villageComputed.length;
+            const limitation = this.resultDisplayLimitation;
+            if (showLng < limitation && computedLng > showLng) {
+                const items = this.villageComputed.slice(showLng, limitation);
+                showList.push(...items);
+            }
+            return showList;
         },
     },
     created: function() {
@@ -225,6 +303,7 @@ export default {
         refresh: async function() {
             const list = await store.house.getAll();
             this.houseList = list.map(v => v.name);
+            this.houseList.push(HOUSE_EMPTY_NAME);
             this.village.get('§¤§infos§', true);
         },
         selectHouse: function(house, idx) {
@@ -265,8 +344,6 @@ export default {
 
             const houses = new Set();
 
-            this.startCompute = performance.now();
-
             this.village.infos.forEach((info) => info.houses.forEach((house) => houses.add(house)));
             const defaultInfo = Object.assign({}, this.village.defaultInfo);
             if (defaultInfo.houses.length) {
@@ -280,14 +357,21 @@ export default {
                 defaultInfo.orientations = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
             }
             const mazes = {};
-            const promises = Array.from(houses, (house) => store.house.get(house).then(h => mazes[house] = h));
+            const hasEmpty = houses.has(HOUSE_EMPTY_NAME);
+            if (hasEmpty) {
+                houses.delete(HOUSE_EMPTY_NAME);
+                mazes[HOUSE_EMPTY_ID] = HOUSE_EMPTY;
+            }
+            const promises = Array.from(houses, (house) => store.house.get(house).then(h => mazes[house] = h).catch((e) => console.info('There has been an error:', e)));
 
             this.status = 'running';
 
             await Promise.all(promises);
+
+            this.startCompute = performance.now();
             worker('composition', {
-                starts: confVillage.starts,
-                ends: confVillage.ends,
+                starts: this.village.starts,
+                ends: this.village.ends,
                 nbPossibilities: this.nbPossibilities,
                 infos: this.village.infos,
                 defaultInfo: defaultInfo,
@@ -310,7 +394,7 @@ export default {
             }
         },
         onComputeProgress: function(data) {
-            const {progress, maze, houses, offset} = data;
+            const {progress, results, offset} = data;
             const {computeProgress: currentProgress, offset: currentOffset} = this;
 
             if (progress > currentProgress) {
@@ -320,28 +404,29 @@ export default {
                 this.offset = offset;
             }
 
-            if (houses || maze) {
-                const houseId = houses.join('');
-                if (this.villageComputed.find(v => v.houseId === houseId)) {
-                    // already displayed
-                    return;
-                }
+            if (results) {
+                results.forEach((response) => {
+                    const {maze, houses, result} = response;
+                    const houseId = houses.join('');
+                    if (this.villageComputed.find(v => v.houseId === houseId)) {
+                        // already displayed
+                        return;
+                    }
 
-                this.villageComputedNb++;
-                if (this.villageComputedNb >= this.resultLimitation) {
-                    this.status = 'Limit of results reached';
-                    this.stopCompute();
-                }
+                    this.villageComputedNb++;
+                    if (this.villageComputedNb >= this.resultLimitation) {
+                        this.status = 'Limit of results reached';
+                        this.stopCompute();
+                    }
 
-                setTimeout(() => {
                     this.villageComputed.push({
                         houseId,
                         maze,
                         houses,
-                        result: data.result,
+                        result: result,
                         difficulty: data.difficulty,
                     });
-                }, 10);
+                });
             }
         },
         onComputeFinished: function(data) {
@@ -352,7 +437,7 @@ export default {
 
             const oldSpeed = this.conf.timeByMaze; // (in maze / ms)
             const speed = this.speed * 1000; // (in M maze / s → maze / ms)
-            this.conf.timeByMaze = (oldSpeed + speed) / 2;
+            this.conf.timeByMaze = (oldSpeed * 2 + speed) / 3;
             if (this.status === 'running') {
                 this.status = 'Complete';
             }
@@ -385,18 +470,44 @@ export default {
                 if (idx !== -1) {
                     this.villageComputed.splice(idx, 1);
                     this.villageComputedNb--;
+                    this.villageComputedShowList = [];
                 }
             }
-        }
+        },
+        clearResult: function() {
+            this.villageComputed=[];
+            this.showRemoveResult=false;
+            this.villageComputedShowList = [];
+            if (this.textFile) {
+                URL.revokeObjectURL(this.textFile);
+            }
+        },
     },
     watch: {
         watcherInfo: function() {
             this.updateInfo();
         },
+        'village.disablingOutsideCells': function() {
+            this.offset = 0;
+        },
     },
     filters: {
-        dec1: function(value) {
-            return Math.round(value * 10) / 10;
+        units: function(value) {
+            let unit = ' M/s';
+
+            if (value < 1) {
+                unit = ' k/s';
+                value *= 1000;
+            }
+
+            if (value < 1) {
+                unit = ' /s';
+                value *= 1000;
+            }
+
+            value =  Math.round(value * 10) / 10;
+
+            return `${value} ${unit}`;
         },
     },
     components: {
@@ -407,6 +518,7 @@ export default {
         RequestStatus: RequestStatus,
         VillageResult: VillageResult,
         VillageResultDetails: VillageResultDetails,
+        ExportVillages: ExportVillages,
     },
 };
 </script>
@@ -486,7 +598,6 @@ aside {
     padding-bottom: 0;
 }
 .controls button {
-    cursor: pointer;
     height: 30px;
 }
 
@@ -510,6 +621,11 @@ progress:not([value]) {
     background-color: var(--selected-item-background);
 }
 
+dialog {
+    position: fixed;
+    top: 50%;
+    transform: translate(0, -50%);
+}
 /* progress[value]::-webkit-progress-bar {
   background-image:
 	   -webkit-linear-gradient(left,

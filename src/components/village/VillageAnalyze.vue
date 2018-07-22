@@ -122,7 +122,7 @@ export default {
         simpleDisplay: {
             type: Boolean,
             default: false,
-        }
+        },
     },
     data: function() {
         this.getFromStore();
@@ -145,7 +145,8 @@ export default {
             return confVillage.sizeX * confVillage.sizeY * confHouse.sizeX * confHouse.sizeY + confVillage.starts.length + confVillage.ends.length;
         },
         nbMovements: function() {
-            return this.result.movements.length - 1;
+            const movements = this.result.movements || [];
+            return movements.length - 1;
         },
         readableMovements: function() {
             const convert = {
@@ -216,6 +217,12 @@ export default {
                 data = await store.configuration.get('defaultWeight') || {};
             }
             this.weight = data.weight;
+        },
+    },
+    watch: {
+        difficultyPercent: function() {
+            this.result.difficultyPercent = this.difficultyPercent;
+            this.result.difficulty = this.difficulty;
         },
     },
     components: {
