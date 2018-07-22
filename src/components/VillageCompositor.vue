@@ -97,7 +97,7 @@
                     <span v-else>Stopping...</span>
                 </button>
                 <progress v-show="isRuning"/>
-                <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed | dec1 }}M /s</span>
+                <span v-show="isRuning" title="Average speed of computation (in number of position computed per second)">{{ this.speed | units }}</span>
             </div>
         </div>
         <div slot="body" class="sharedArea resultArea">
@@ -541,8 +541,22 @@ export default {
         },
     },
     filters: {
-        dec1: function(value) {
-            return Math.round(value * 10) / 10;
+        units: function(value) {
+            let unit = ' M/s';
+
+            if (value < 1) {
+                unit = ' k/s';
+                value *= 1000;
+            }
+
+            if (value < 1) {
+                unit = ' /s';
+                value *= 1000;
+            }
+
+            value =  Math.round(value * 10) / 10;
+
+            return `${value} ${unit}`;
         },
     },
     components: {
