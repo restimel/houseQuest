@@ -145,7 +145,8 @@ export default {
             return confVillage.sizeX * confVillage.sizeY * confHouse.sizeX * confHouse.sizeY + confVillage.starts.length + confVillage.ends.length;
         },
         nbMovements: function() {
-            return this.result.movements.length - 1;
+            const movements = this.result.movements || [];
+            return movements.length - 1;
         },
         readableMovements: function() {
             const convert = {

@@ -705,7 +705,7 @@ function compose(data, id) {
             return finish();
         }
         const time = performance.now();
-        const responses = [];
+        let responses = [];
         const timeLimit = startOffset === nbTested ? bashTime / 2 : bashTime;
 
         do {
@@ -716,6 +716,7 @@ function compose(data, id) {
                     sendResult({
                         results: responses
                     });
+                    responses = null;
                 }
                 return finish();
             }
@@ -727,6 +728,7 @@ function compose(data, id) {
                     sendResult({
                         results: responses
                     });
+                    responses = null;
                 }
                 return finish();
             }
@@ -738,7 +740,6 @@ function compose(data, id) {
             const result = analyze({ maze, starts, ends });
             if (result.nbShortestPath < nbMaxCell) {
                 responses.push({
-                    maze: maze,
                     houses: possibilities.map((possibility) => possibility.houses[possibility.idxHouse] + '§' + possibility.orientations[possibility.idxOrientation]),
                     result: result,
                 });
@@ -749,6 +750,7 @@ function compose(data, id) {
             results: responses
         });
 
+        responses = null;
         setTimeout(runBash, 1, id);
     }
 
