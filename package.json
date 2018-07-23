@@ -1,6 +1,6 @@
 {
   "name": "housemaze",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Game design for house maze.",
   "author": "restimel <restimel@gmail.com>",
   "private": true,
@@ -21,7 +21,8 @@
     "i": "^0.3.6",
     "npm": "^6.2.0",
     "vue": "^2.5.2",
-    "vue-router": "^3.0.1"
+    "vue-router": "^3.0.1",
+    "vue-slider-component": "^2.7.4"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",
