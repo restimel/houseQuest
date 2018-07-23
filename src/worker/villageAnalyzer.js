@@ -427,7 +427,7 @@ function analyze({maze, starts, ends}) {
         complexMovements: complexMovements,
         hardMovements: hardMovements,
         difficulty: 0,
-        difficultyPercent: '0 %',
+        difficultyPercent: 0,
     };
 }
 
@@ -517,12 +517,13 @@ function compose(data, id) {
         mazeWidthHouse, mazeHeightHouse, houseWidth, houseHeight,
         starts, ends,
         useOnce,
-        offset,
+        offset, filter,
         nbPossibilities: nbToTest,
     } = data;
     const nbMaxCell = mazeWidth * mazeHeight;
     let startOffset = offset;
     const cellExt = starts.concat(ends);
+    const difficultyMax = getDifficultyMax(filter.weight);
 
     const housesStore = new Map();
     const houseUsed = new Set();
@@ -740,12 +741,24 @@ function compose(data, id) {
             }
 
             const result = analyze({ maze, starts, ends });
-            if (result.nbShortestPath < nbMaxCell) {
-                responses.push({
-                    houses: possibilities.map((possibility) => possibility.houses[possibility.idxHouse] + '§' + possibility.orientations[possibility.idxOrientation]),
-                    result: result,
-                });
+            if (result.nbShortestPath > nbMaxCell) {
+                continue;
             }
+
+            result.difficulty = getDifficulty(filter.weight, {
+                result,
+                nbMaxCells: nbMaxCell,
+                sizeX: mazeWidth,
+            });
+            result.difficultyPercent = getDifficultyEstimation(result.difficulty, difficultyMax);
+            if (result.difficultyPercent < filter.difficulty[0] || result.difficultyPercent > filter.difficulty[1]) {
+                continue;
+            }
+
+            responses.push({
+                houses: possibilities.map((possibility) => possibility.houses[possibility.idxHouse] + '§' + possibility.orientations[possibility.idxOrientation]),
+                result: result,
+            });
         } while (performance.now() - time < timeLimit);
 
         sendResult({
@@ -936,7 +949,7 @@ function rotateHouse(house, orientation) {
             case 'DOWN':
                 X = sizeX - x - 1;
                 Y = sizeY - y - 1;
-                cell = maze[X][Y] || noCell;
+                cell = maze[X][Y] || emptyCell;
                 return {
                     u: cell.d,
                     d: cell.u,
@@ -946,7 +959,7 @@ function rotateHouse(house, orientation) {
             case 'LEFT':
                 X = sizeX - y - 1;
                 Y = x;
-                cell = maze[X][Y] || noCell;
+                cell = maze[X][Y] || emptyCell;
                 return {
                     u: cell.r,
                     d: cell.l,
@@ -956,7 +969,7 @@ function rotateHouse(house, orientation) {
             case 'RIGHT':
                 X = y;
                 Y = sizeY - x - 1;
-                cell = maze[X][Y] || noCell;
+                cell = maze[X][Y] || emptyCell;
                 return {
                     u: cell.l,
                     d: cell.r,
@@ -977,9 +990,28 @@ function rotateHouse(house, orientation) {
 
     return newMaze;
 }
-const noCell = {
-    u: false,
-    d: false,
-    l: false,
-    r: false,
-};
+
+
+function getDifficultyMax(weight) {
+    const nbCell = 1 * weight.nbCellAccessible;
+    const nbShtPath = 1 * weight.nbShortPath;
+    const nbMovements = 1 * weight.nbMovements;
+    const nbComplexMove = 1 * weight.nbComplexMove;
+    const nbHardMove = 1 * weight.nbHardMove;
+    return 0.01 + nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
+}
+function getDifficulty(weight, {result, nbMaxCells, sizeX}) {
+    const nbCell = (result.nbCellAccessible / nbMaxCells) * weight.nbCellAccessible;
+    const nbShtPath = (result.nbShortestPath / nbMaxCells) * weight.nbShortPath;
+    const nbMovements = (result.movements.length / (nbMaxCells - sizeX)) * weight.nbMovements;
+    const nbComplexMove = asymptotic(result.complexMovements, sizeX, 6) * weight.nbComplexMove;
+    const nbHardMove = asymptotic(result.hardMovements, 9, 3) * weight.nbHardMove;
+    return 0.01 + nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
+}
+function getDifficultyEstimation(difficulty, difficultyMax) {
+    const value = asymptotic(difficulty, difficultyMax, 5);
+    return Math.round(value * 10000) / 100;
+}
+function asymptotic(x, Tmax = 100, Quickness = 1) {
+    return (1 - Tmax / (Quickness * x + Tmax));
+}

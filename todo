@@ -1,11 +1,11 @@
 list of Bugs && Todo
 
-*II* Filtering on difficulty percent
+*II* paginate other results
 *II* See path in summary result (only shortest path)
 *III* display
     → do not display existing result
     → watch similar result (compute antropy)
-*III* filter results by different criteria / paginate other results
+*III* filter results by different criteria
 *III* bug: previous defaultInfo selection not displayed at start
 *III* Keep results in memory (when switching tabs) (indexedDB ?)
 *III* Import data from CSV

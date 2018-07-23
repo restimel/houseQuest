@@ -28,6 +28,20 @@
             class="sharedArea"
             slot="body"
         >
+            <div class="filter">
+                <label title="Keep only result which are in the corresponding range">
+                    Difficulty range:
+                    <vue-slider
+                        class="slider"
+                        :min="0"
+                        :max="100"
+                        width="250px"
+                        formatter="{value}%"
+                        v-model="filter.difficulty"
+                        @input="resetOffset"
+                    />
+                </label>
+            </div>
             <Village
                 class="svg"
                 :village="village"
@@ -37,11 +51,13 @@
                 @selection="selectHouse"
             />
             <HouseSelector
+                class="action"
                 :selected="selectedHouse"
                 :list="houseList"
                 @change="changeHouse"
             />
             <RequestStatus
+                class="option"
                 :village="village"
                 :list="houseList"
                 @nbPossibilities="changeNbPossibilities"
@@ -107,7 +123,7 @@
                 />
                 <div
                     v-show="villageComputed.length - villageComputedDisplayed.length > 0"
-                    class=""
+                    class="village-result-item"
                 >
                     There are also {{villageComputed.length - villageComputedDisplayed.length}} more result.
                 </div>
@@ -174,6 +190,7 @@ import VillageView from '@/components/village/SvgVillage';
 import ExportVillages from '@/components/village/ExportVillages';
 import AskDialog from '@/components/AskDialog';
 import worker from '@/core/worker';
+import VueSlider from 'vue-slider-component';
 
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
@@ -207,6 +224,8 @@ export default {
             },
         });
 
+        this.getFromStore();
+
         this.villageComputedShowList = [];
         this.resultDisplayLimitation = 20;
 
@@ -231,6 +250,10 @@ export default {
             showRemoveResult: false,
             resultLimitation: conf.resultLimitation,
             showExport: false,
+            filter: {
+                difficulty: [0, 100],
+                weight: {},
+            },
 
             selectedResult: {},
         };
@@ -284,6 +307,13 @@ export default {
         this.updateInfo();
     },
     methods: {
+        getFromStore: async function() {
+            let data = await store.configuration.get('weight');
+            if (!data) {
+                data = await store.configuration.get('defaultWeight') || {};
+            }
+            this.filter.weight = data.weight;
+        },
         updateInfo: function() {
             const defaultInfo = this.conf.defaultInfo;
             const infos = this.conf.infos;
@@ -332,9 +362,7 @@ export default {
                 this.village.defaultInfo = info;
                 this.conf.defaultInfo = info;
             }
-            this.computeProgress = -1;
-            this.offset = 0;
-            this.status = 'not started';
+            this.resetOffset();
         },
         compute: async function() {
             this.houseComputed = [];
@@ -362,7 +390,8 @@ export default {
                 houses.delete(HOUSE_EMPTY_NAME);
                 mazes[HOUSE_EMPTY_ID] = HOUSE_EMPTY;
             }
-            const promises = Array.from(houses, (house) => store.house.get(house).then(h => mazes[house] = h).catch((e) => console.info('There has been an error:', e)));
+            const promises = Array.from(houses, (house) => store.house.get(house).then(h => mazes[house] = h)
+                .catch((e) => console.info('There has been an error:', e)));
 
             this.status = 'running';
 
@@ -384,6 +413,7 @@ export default {
                 houseHeight: confHouse.sizeY,
                 useOnce: true,
                 offset: this.offset,
+                filter: this.filter,
             }, this.onComputeProgress.bind(this)).then(this.onComputeFinished.bind(this));
         },
         stopCompute: function() {
@@ -482,13 +512,18 @@ export default {
                 URL.revokeObjectURL(this.textFile);
             }
         },
+        resetOffset: function() {
+            this.computeProgress = -1;
+            this.offset = 0;
+            this.status = 'not started';
+        },
     },
     watch: {
         watcherInfo: function() {
             this.updateInfo();
         },
         'village.disablingOutsideCells': function() {
-            this.offset = 0;
+            this.resetOffset();
         },
     },
     filters: {
@@ -519,6 +554,7 @@ export default {
         VillageResult: VillageResult,
         VillageResultDetails: VillageResultDetails,
         ExportVillages: ExportVillages,
+        VueSlider: VueSlider,
     },
 };
 </script>
@@ -554,17 +590,32 @@ progress {
 .sharedArea {
     display: grid;
     grid-template:
-        "svg action" 1fr
-        "svg options" 1fr
-        ". controls" 40px
-        / 1fr 300px;
+        "filter svg action" 1fr
+        "filter svg options" 1fr
+        "filter . controls" 40px
+        / 300px 1fr 300px;
     height: 90%;
+}
+.filter {
+    grid-area: filter;
+    border-right: var(--aside-left-border);
+    padding: 1em;
+    overflow: auto;
+}
+.action {
+    grid-area: action;
+}
+.option {
+    grid-area: options;
 }
 .sharedArea.resultArea {
     grid-template:
         "svg options" 1fr
         ". controls" 40px
         / 1fr 400px;
+}
+.slider {
+    margin-top: 2em;
 }
 .body {
     height: 100%;
