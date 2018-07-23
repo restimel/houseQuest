@@ -123,7 +123,8 @@
                 />
                 <div
                     v-show="villageComputed.length - villageComputedDisplayed.length > 0"
-                    class="village-result-item"
+                    class="village-result-item interactive-area"
+                    @click="paginateResult"
                 >
                     There are also {{villageComputed.length - villageComputedDisplayed.length}} more result.
                 </div>
@@ -227,7 +228,6 @@ export default {
         this.getFromStore();
 
         this.villageComputedShowList = [];
-        this.resultDisplayLimitation = 20;
 
         return {
             conf: conf,
@@ -249,6 +249,7 @@ export default {
             status: 'not started',
             showRemoveResult: false,
             resultLimitation: conf.resultLimitation,
+            resultDisplayLimitation: 10,
             showExport: false,
             filter: {
                 difficulty: [0, 100],
@@ -481,6 +482,9 @@ export default {
         changedStateResult: function(value) {
             this.isResultOpen = value;
         },
+        paginateResult: function() {
+            this.resultDisplayLimitation += 10;
+        },
         changeNbPossibilities: function(nbPossibilities) {
             this.nbPossibilities = nbPossibilities;
         },
@@ -508,9 +512,7 @@ export default {
             this.villageComputed=[];
             this.showRemoveResult=false;
             this.villageComputedShowList = [];
-            if (this.textFile) {
-                URL.revokeObjectURL(this.textFile);
-            }
+            this.resultDisplayLimitation = 10;
         },
         resetOffset: function() {
             this.computeProgress = -1;
