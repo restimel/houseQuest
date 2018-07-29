@@ -60,6 +60,8 @@ const Village = Vue.component('Village', {
     },
     methods: {
         get: async function(name, asDefault = false) {
+            const keepInfo = name === '§¤§infos§';
+
             if (asDefault) {
                 await this.conf.isLoaded;
                 if (this.conf.villageName) {
@@ -70,7 +72,7 @@ const Village = Vue.component('Village', {
                 this.clear();
                 return;
             }
-            if (name === '§¤§infos§') {
+            if (keepInfo) {
                 this.clear(true);
                 return;
             }
