@@ -7,5 +7,4 @@ list of Bugs && Todo
 *III* filter results by different criteria
 *III* bug: previous defaultInfo selection not displayed at start
 *III* Keep results in memory (when switching tabs) (indexedDB ?)
-*III* Import data from CSV
 *IV* performance optimization → quick search (no A*)

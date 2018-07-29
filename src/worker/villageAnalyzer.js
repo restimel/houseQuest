@@ -726,14 +726,18 @@ function compose(data, id) {
 
             if (++nbTested > nbToTest) {
                 // If all works correctly it should never happen
-                nbTested--;
                 if (responses.length) {
                     sendResult({
                         results: responses
                     });
                     responses = null;
                 }
-                return finish();
+                // protection over infinite loop
+                if (nbTested > 2 * nbToTest) {
+                    return finish();
+                } else {
+                    console.warn('Limit reach');
+                }
             }
 
             if (!(maze = buildMaze())) {
