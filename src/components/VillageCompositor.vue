@@ -1,5 +1,16 @@
 <template>
-<div class="composition">
+<div class="composition"
+    :class="{
+        dragover: dragover,
+    }"
+    @dragover.prevent="(evt)=>{
+        evt.dataTransfer.dropEffect='copy';
+        dragover=true;
+    }"
+    @drop.prevent="dropFile"
+    @dragenter="dragover=true"
+    @dragleave="dragover=false"
+>
     <DetailsCustom
         class="request details"
         :open="isRequestOpen"
@@ -31,7 +42,7 @@
             <div class="filter">
                 <label title="Keep only result which are in the corresponding range">
                     Difficulty range:
-                    <vue-slider
+                    <VueSlider
                         class="slider"
                         :min="0"
                         :max="100"
@@ -90,14 +101,14 @@
                 <button v-if="!isRuning"
                     :disabled="!canCompute"
                     :title="statusCompute"
-                    @click.stop="compute"
+                    @click.stop.prevent="compute"
                 >
                     <Icon icon="calculator"/>
                     Compute <span v-show="continueComputation">(continue)</span>
                 </button>
                 <button v-else
                     :disabled="isStopping"
-                    @click.stop="stopCompute"
+                    @click.stop.prevent="stopCompute"
                 >
                     <span v-if="!isStopping">Stop</span>
                     <span v-else>Stopping...</span>
@@ -143,6 +154,13 @@
                     Export to csv
                 </button>
                 <button
+                    @click="showImport=true"
+                    title="Import results from a CSV file"
+                >
+                    <Icon icon="file-export" />
+                    Import from csv
+                </button>
+                <button
                     v-show="!!selectedResult.houseId"
                     @click="removeResult"
                 >
@@ -174,6 +192,12 @@
         :list="villageComputed"
         @close="showExport=false"
     />
+    <ImportVillages
+        :show="showImport"
+        :dragFiles="dragFiles"
+        @import="importResults"
+        @close="showImport=false"
+    />
 </div>
 </template>
 
@@ -189,6 +213,7 @@ import VillageResult from '@/components/composition/VillageResult';
 import VillageResultDetails from '@/components/composition/VillageResultDetails';
 import VillageView from '@/components/village/SvgVillage';
 import ExportVillages from '@/components/village/ExportVillages';
+import ImportVillages from '@/components/village/ImportVillages';
 import AskDialog from '@/components/AskDialog';
 import worker from '@/core/worker';
 import VueSlider from 'vue-slider-component';
@@ -251,10 +276,13 @@ export default {
             resultLimitation: conf.resultLimitation,
             resultDisplayLimitation: 10,
             showExport: false,
+            showImport: false,
             filter: {
                 difficulty: [0, 100],
                 weight: {},
             },
+            dragFiles: null,
+            dragover: false,
 
             selectedResult: {},
         };
@@ -519,6 +547,27 @@ export default {
             this.offset = 0;
             this.status = 'not started';
         },
+        dropFile: function(evt) {
+            this.dragFiles = evt;
+            this.dragover = false;
+        },
+        importResults: function(results) {
+            results.forEach(houses => {
+                const houseId = houses.join('');
+
+                if (this.villageComputed.find(v => v.houseId === houseId)) {
+                    // already displayed
+                    return;
+                }
+
+                this.villageComputedNb++;
+
+                this.villageComputed.push({
+                    houseId,
+                    houses,
+                });
+            });
+        },
     },
     watch: {
         watcherInfo: function() {
@@ -556,6 +605,7 @@ export default {
         VillageResult: VillageResult,
         VillageResultDetails: VillageResultDetails,
         ExportVillages: ExportVillages,
+        ImportVillages: ImportVillages,
         VueSlider: VueSlider,
     },
 };
@@ -672,6 +722,10 @@ progress:not([value]) {
 
 .result-selected {
     background-color: var(--selected-item-background);
+}
+
+.dragover {
+    border: 5px dotted var(--selected-item-background);
 }
 
 dialog {

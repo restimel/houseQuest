@@ -27,6 +27,10 @@ const Village = Vue.component('Village', {
             type: Boolean,
             default: false,
         },
+        result: {
+            type: Object,
+            required: false,
+        },
     },
     data: function() {
         return {
@@ -49,9 +53,15 @@ const Village = Vue.component('Village', {
         ends: function() {
             return confVillage.ends.filter(cell => !this.disablingOutsideCells.includes(cell));
         },
+        isAnalyzeResultEmpty: function() {
+            const analyzeResult = this.analyzeResult;
+            return Object.keys(analyzeResult).length === 0;
+        }
     },
     methods: {
         get: async function(name, asDefault = false) {
+            const keepInfo = name === '§¤§infos§';
+
             if (asDefault) {
                 await this.conf.isLoaded;
                 if (this.conf.villageName) {
@@ -62,7 +72,7 @@ const Village = Vue.component('Village', {
                 this.clear();
                 return;
             }
-            if (name === '§¤§infos§') {
+            if (keepInfo) {
                 this.clear(true);
                 return;
             }
@@ -136,6 +146,7 @@ const Village = Vue.component('Village', {
         analyze: function(result) {
             result.shortestPath = new Set(result.shortestPath);
             this.analyzeResult = result;
+            this.$emit('analyze:done', result);
         },
         toggleOutsideCell: function(cell) {
             const idx = this.disablingOutsideCells.indexOf(cell);
@@ -196,7 +207,7 @@ const Village = Vue.component('Village', {
             }
         },
         _runAnalyze: function() {
-            if (!this.withoutAnalyze) {
+            if (!this.withoutAnalyze && this.isAnalyzeResultEmpty) {
                 const workerAnalyze = () => {
                     if (workerLimitation > 0) {
                         workerLimitation--;
@@ -217,6 +228,9 @@ const Village = Vue.component('Village', {
         },
     },
     watch: {
+        result: function(result) {
+            this.analyzeResult = result;
+        },
         houses: async function() {
             const houses = this.houses;
             const confVillageSizeX = confVillage.sizeX;

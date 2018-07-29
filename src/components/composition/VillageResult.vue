@@ -33,32 +33,33 @@ export default {
     data: function() {
         const village = new Village({
             propsData: {
-                withoutAnalyze: true,
+                withoutAnalyze: false,
+                result: this.result.result,
             },
         });
+        village.$on('analyze:done', (result) => this.analyzedResult = result);
 
         return {
             village: village,
+            analyzedResult: {},
         };
     },
     created: function () {
         this.updateResult();
     },
-    computed: {
-        analyzedResult: function() {
-            return this.result.result;
-        },
-    },
     methods: {
         updateResult: function() {
-            if (this.result.maze) {
-                this.village.maze = this.result.maze;
+            const result = this.result;
+
+            if (result.maze) {
+                this.village.maze = result.maze;
             }
-            if (this.result.houses) {
-                this.village.houses = this.result.houses;
+            if (result.houses) {
+                this.village.houses = result.houses;
             }
-            if (this.result.result) {
-                this.village.result = this.result.result;
+            if (result.result) {
+                this.village.result = result.result;
+                this.analyzedResult = result.result;
             }
         },
     },

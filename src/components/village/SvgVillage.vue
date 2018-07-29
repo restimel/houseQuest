@@ -27,6 +27,7 @@
                 :height="height"
             />
 
+            <!-- start cells -->
             <g v-for="start of starts" :key="'start-'+start"
                 @click="toggleOutsideCell(start)"
                 class="{'interactive-area': !readonly}"
@@ -46,6 +47,7 @@
                     :transform="transformArrow(start)"
                 />
             </g>
+            <!-- end cells -->
             <g v-for="end of ends" :key="'end-'+end"
                 @click="toggleOutsideCell(end)"
                 class="interactive-area"
@@ -66,6 +68,7 @@
                 />
             </g>
 
+            <!-- maze cells -->
             <template v-if="isMaze">
                 <g v-for="(cellColumn, idx) of village.maze"
                     :key="'villageCellColumn-'+idx"
@@ -81,6 +84,7 @@
                 </g>
             </template>
 
+            <!-- path arrows -->
             <template v-if="result.cells">
                 <g v-for="(cellColumn, idx) of result.cells"
                     :key="'resultCellColumn-'+idx"
@@ -99,6 +103,7 @@
                 </g>
             </template>
 
+            <!-- information about houses and orientation limitation -->
             <template v-if="isInfo">
                 <g v-for="(cellHouse, idx) of village.houses"
                     :key="'villageHouseInfo-'+idx"
@@ -128,6 +133,8 @@
                     </text>
                 </g>
             </template>
+
+            <!-- info (detail) of this house -->
             <template v-if="isDetailed">
                 <g v-for="(cellHouse, idx) of village.houses"
                     :key="'villageHouseDetail-'+idx"
@@ -153,6 +160,7 @@
                 </g>
             </template>
 
+            <!-- selectable area -->
             <template v-if="!readonly">
                 <rect v-for="(cellHouse, idx) of village.houses"
                     :key="'villageHouse-'+idx"
