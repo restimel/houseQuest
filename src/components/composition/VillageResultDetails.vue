@@ -67,6 +67,7 @@ export default {
         return {
             village: new Village({
                 withoutAnalyze: false,
+                forceAnalyze: false,
             }),
             askDialog: false,
             villageName: '',

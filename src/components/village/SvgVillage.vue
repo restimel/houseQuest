@@ -204,6 +204,13 @@ const arrows = {
     'RIGHT': '→',
 };
 
+const noParentCell = {
+    dirParent: '',
+    dist: Infinity,
+    orientation: '',
+    parent: NaN,
+};
+
 export default {
     name: 'VillageView',
     props: {
@@ -300,7 +307,8 @@ export default {
         },
         arrowCells: function() {
             const pathDisplay = this.whichPath;
-            const cells = this.result.cells;
+            const result = this.result;
+            const cells = result.cells;
 
             if (!cells) {
                 return;
@@ -310,7 +318,12 @@ export default {
                 return;
             }
             if (pathDisplay === 1) {
-                return cells.filter((cell) => {console.log('TODO filter arrow',cell); return true});
+                return cells.map((rows, x) => rows.map((cell, y) => {
+                    if (result.shortestPath.has(`${x}, ${y}`)) {
+                        return cell;
+                    }
+                    return noParentCell;
+                }));
             }
             return cells;
         },

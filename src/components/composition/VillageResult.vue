@@ -37,6 +37,7 @@ export default {
         const village = new Village({
             propsData: {
                 withoutAnalyze: false,
+                forceAnalyze: false,
                 result: this.result.result,
             },
         });
