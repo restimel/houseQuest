@@ -6,6 +6,7 @@
             path: 1,
             info: false,
         }"
+        :result="result.result"
         :changeDisplay="false"
         readonly
     />

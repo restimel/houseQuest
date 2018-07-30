@@ -15,6 +15,7 @@
                     info: true,
                     path: true,
                 }"
+                :result="result.result"
                 readonly
             />
         </div>

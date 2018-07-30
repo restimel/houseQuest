@@ -1,6 +1,5 @@
 list of Bugs && Todo
 
-*II* See path in summary result (only shortest path)
 *III* display
     → do not display existing result
     → watch similar result (compute antropy)
@@ -8,3 +7,4 @@ list of Bugs && Todo
 *III* bug: previous defaultInfo selection not displayed at start
 *III* Keep results in memory (when switching tabs) (indexedDB ?)
 *IV* performance optimization → quick search (no A*)
+*IV* bug: compute sometime goes over 100%

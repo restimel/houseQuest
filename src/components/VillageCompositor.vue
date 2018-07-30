@@ -485,6 +485,10 @@ export default {
                         this.stopCompute();
                     }
 
+                    if (result.shortestPath instanceof Array) {
+                        result.shortestPath = new Set(result.shortestPath);
+                    }
+
                     this.villageComputed.push({
                         houseId,
                         maze,
