@@ -21,8 +21,11 @@
         :village="village"
         :selected="selectedHouse"
         :result="village.analyzeResult"
-        display="mazeInfo"
-        :changeDisplay="['maze', 'mazeInfo']"
+        :changeDisplay="{
+            limitation: false,
+            info: true,
+            path: true,
+        }"
         @selection="selectHouse"
     />
     <houseAction

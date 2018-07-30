@@ -3,6 +3,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import {
     faTrashAlt, faSave, faCalculator, faEraser, faFileImport, faFileExport, faPlus,
     faTimes, faLongArrowAltUp, faLongArrowAltDown,
+    faEye, faEyeSlash, faLowVision,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
@@ -10,6 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 library.add(
     faTrashAlt, faSave, faCalculator, faEraser, faFileImport, faFileExport, faPlus,
     faTimes, faLongArrowAltUp, faLongArrowAltDown,
+    faEye, faEyeSlash, faLowVision,
 );
 
 Vue.component('Icon', FontAwesomeIcon);

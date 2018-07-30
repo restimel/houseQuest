@@ -61,7 +61,9 @@
                 class="svg"
                 :village="village"
                 :selected="selectedHouse"
-                display="info"
+                :display="{
+                    limitation: true,
+                }"
                 :changeDisplay="false"
                 @selection="selectHouse"
             />

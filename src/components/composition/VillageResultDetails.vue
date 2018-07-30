@@ -10,8 +10,11 @@
         <div>
             <Village
                 :village="village"
-                display="mazeInfo"
-                :changeDisplay="['maze', 'mazeInfo']"
+                :changeDisplay="{
+                    limitation: false,
+                    info: true,
+                    path: true,
+                }"
                 readonly
             />
         </div>

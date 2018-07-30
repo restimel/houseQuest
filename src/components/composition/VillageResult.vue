@@ -2,7 +2,10 @@
 <div @click="$emit('click')">
     <Village
         :village="village"
-        display="maze"
+        :display="{
+            path: 1,
+            info: false,
+        }"
         :changeDisplay="false"
         readonly
     />
