@@ -69,12 +69,6 @@ export default {
 </script>
 
 <style scoped>
-dialog {
-    margin-top: 25px;
-    box-shadow: 5px 5px 10px black;
-    padding: 1em;
-}
-
 header {
     font-size: 1.2em;
     margin-bottom: 1em;

@@ -73,12 +73,25 @@ button[disabled],
 .interactive-area.disabled {
     color: var(--disabled-link);
 }
+
+dialog {
+    box-shadow: 5px 5px 10px black;
+    padding: 1em;
+
+    position: fixed;
+    top: 50%;
+    transform: translate(0, -50%);
+
+    z-index: var(--layer-dialog);
+}
 </style>
 
 <style>
 :root {
     --text-color: rgb(0, 0, 0);
     --warning-text: rgb(150, 120, 0);
+    --error-text: rgb(255, 70, 0);
+    --info-background: rgb(140, 150, 255);
     --error-background: rgb(255, 200, 200);
     --menu-background: rgb(50, 0, 50);
     --page-background: rgb(235, 230, 255);
@@ -113,6 +126,10 @@ button[disabled],
     --selected-item-border: 3px outset var(--menu-background);
 
     --selected-item-background: var(--menu-background);
+
+    /* Layers (for z-index) */
+    --layer-dialog: 200;
+    --layer-mask-drop: 2000;
 }
 </style>
 <style>

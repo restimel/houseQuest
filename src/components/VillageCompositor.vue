@@ -3,14 +3,18 @@
     :class="{
         dragover: dragover,
     }"
-    @dragover.prevent="(evt)=>{
-        evt.dataTransfer.dropEffect='copy';
-        dragover=true;
-    }"
-    @drop.prevent="dropFile"
+    dropzone="copy f:image/png"
+    @dragover.prevent.stop="dragover=true"
     @dragenter="dragover=true"
-    @dragleave="dragover=false"
 >
+    <div class="dragmask"
+        v-show="dragover"
+
+        @drop.prevent="dropFile"
+        @dragover.prevent="()=>{}"
+        @dragleave="dragover=false"
+    >
+    </div>
     <DetailsCustom
         class="request details"
         :open="isRequestOpen"
@@ -548,7 +552,7 @@ export default {
             this.status = 'not started';
         },
         dropFile: function(evt) {
-            this.dragFiles = evt;
+            this.dragFiles = evt.dataTransfer && evt.dataTransfer.files;
             this.dragover = false;
         },
         importResults: function(results) {
@@ -724,15 +728,21 @@ progress:not([value]) {
     background-color: var(--selected-item-background);
 }
 
-.dragover {
+/* .dragover {
     border: 5px dotted var(--selected-item-background);
+} */
+
+.dragmask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--selected-item-background);
+    opacity: 0.2;
+    z-index: var(--layer-mask-drop);
 }
 
-dialog {
-    position: fixed;
-    top: 50%;
-    transform: translate(0, -50%);
-}
 /* progress[value]::-webkit-progress-bar {
   background-image:
 	   -webkit-linear-gradient(left,
