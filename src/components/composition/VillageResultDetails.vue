@@ -10,8 +10,12 @@
         <div>
             <Village
                 :village="village"
-                display="mazeInfo"
-                :changeDisplay="['maze', 'mazeInfo']"
+                :changeDisplay="{
+                    limitation: false,
+                    info: true,
+                    path: true,
+                }"
+                :result="result.result"
                 readonly
             />
         </div>
@@ -64,6 +68,7 @@ export default {
         return {
             village: new Village({
                 withoutAnalyze: false,
+                forceAnalyze: false,
             }),
             askDialog: false,
             villageName: '',

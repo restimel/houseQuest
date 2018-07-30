@@ -2,7 +2,11 @@
 <div @click="$emit('click')">
     <Village
         :village="village"
-        display="maze"
+        :display="{
+            path: 1,
+            info: false,
+        }"
+        :result="result.result"
         :changeDisplay="false"
         readonly
     />
@@ -34,6 +38,7 @@ export default {
         const village = new Village({
             propsData: {
                 withoutAnalyze: false,
+                forceAnalyze: false,
                 result: this.result.result,
             },
         });

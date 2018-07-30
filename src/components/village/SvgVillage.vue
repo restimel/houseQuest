@@ -1,15 +1,28 @@
 <template>
 <div class="svg-container">
-    <select v-if="changeDisplayValues.length > 1"
-        v-model="currentDisplay"
-    >
-        <option v-for="item of changeDisplayValues"
-            :key="item.id"
-            :value="item.id"
+    <div>
+        <span v-if="canChangeDetail"
+            class="interactive-area switch-display"
+            @click="switchDisplay('info')"
         >
-            {{item.label}}
-        </option>
-    </select>
+            <Icon :icon="['fas', isDetailed ? 'eye' : 'eye-slash']" />
+            House name
+        </span>
+        <span v-if="canChangePath"
+            class="interactive-area switch-display"
+            @click="switchDisplay('path')"
+        >
+            <Icon :icon="['fas', whichPath === 0 ? 'eye-slash' : whichPath === 1 ? 'low-vision' : 'eye']" />
+            {{pathDisplaySummary[whichPath]}}
+        </span>
+        <span v-if="canChangeLimitation"
+            class="interactive-area switch-display"
+            @click="switchDisplay('limitation')"
+        >
+            <Icon :icon="['fas', isLimitation ? 'eye' : 'eye-slash']" />
+            {{currentDisplay.limitation ? 'houe limitation' : 'house cells'}}
+        </span>
+    </div>
     <svg width="98%" height="98%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
         <defs>
             <path id="arrow" class="arrow" d="M0,25 v-55 l-20,20 20,-20 20,20" />
@@ -85,8 +98,8 @@
             </template>
 
             <!-- path arrows -->
-            <template v-if="result.cells">
-                <g v-for="(cellColumn, idx) of result.cells"
+            <template v-if="arrowCells">
+                <g v-for="(cellColumn, idx) of arrowCells"
                     :key="'resultCellColumn-'+idx"
                 >
                     <g v-for="(cell, idy) of cellColumn"
@@ -104,7 +117,7 @@
             </template>
 
             <!-- information about houses and orientation limitation -->
-            <template v-if="isInfo">
+            <template v-if="isLimitation">
                 <g v-for="(cellHouse, idx) of village.houses"
                     :key="'villageHouseInfo-'+idx"
                 >
@@ -191,6 +204,13 @@ const arrows = {
     'RIGHT': '→',
 };
 
+const noParentCell = {
+    dirParent: '',
+    dist: Infinity,
+    orientation: '',
+    parent: NaN,
+};
+
 export default {
     name: 'VillageView',
     props: {
@@ -214,24 +234,33 @@ export default {
             },
         },
         display: {
-            type: String,
-            default: 'maze',
-            validator: function(value) {
-                return ['maze', 'info', 'mazeInfo'].includes(value);
+            type: Object,
+            default: function() {
+                return {
+                    limitation: false, // display limitation instead of maze
+                    info: true, // display name and orientation
+                    path: 2, // 0: no display; 1: display: shortest path; 2: display all
+                };
             },
         },
         changeDisplay: {
-            type: [Boolean, Array],
+            type: [Boolean, Object],
             default: true,
         },
     },
     data: function() {
+        this.pathDisplaySummary = [
+            'No path',
+            'Only shortest path',
+            'All accessible cells',
+        ];
+
         return {
             size: 100,
             starts: confVillage.starts,
             ends: confVillage.ends,
             renderId: 0,
-            currentDisplay: this.display,
+            currentDisplay: Object.assign({}, this.display),
         };
     },
     created: function() {
@@ -265,32 +294,59 @@ export default {
             return confHouse.sizeY * this.size;
         },
         isMaze: function() {
-            return (this.currentDisplay === 'maze' || this.currentDisplay === 'mazeInfo') && this.village.maze[0];
+            return !this.isLimitation && this.village.maze[0];
         },
-        isInfo: function() {
-            return this.currentDisplay==='info';
+        isLimitation: function() {
+            return !!this.currentDisplay.limitation;
         },
         isDetailed: function() {
-            return this.currentDisplay === 'mazeInfo';
+            return !!this.currentDisplay.info;
         },
-        changeDisplayValues: function() {
-            if (this.changeDisplay === false) {
-                return [];
+        whichPath: function() {
+            return this.currentDisplay.path;
+        },
+        arrowCells: function() {
+            const pathDisplay = this.whichPath;
+            const result = this.result;
+            const cells = result.cells;
+
+            if (!cells) {
+                return;
             }
-            let list = [{
-                id: 'maze',
-                label: 'Maze',
-            }, {
-                id: 'mazeInfo',
-                label: 'Maze and house names',
-            }, {
-                id: 'info',
-                label: 'House limitation',
-            }];
-            if (this.changeDisplay.length > 0) {
-                list = list.filter(l => this.changeDisplay.includes(l.id));
+
+            if (pathDisplay === 0) {
+                return;
             }
-            return list;
+            if (pathDisplay === 1) {
+                return cells.map((rows, x) => rows.map((cell, y) => {
+                    if (result.shortestPath.has(`${x}, ${y}`)) {
+                        return cell;
+                    }
+                    return noParentCell;
+                }));
+            }
+            return cells;
+        },
+        canChangeLimitation: function() {
+            const changeDisplay = this.changeDisplay;
+            if (typeof changeDisplay === 'boolean') {
+                return changeDisplay;
+            }
+            return !!changeDisplay.limitation;
+        },
+        canChangeDetail: function() {
+            const changeDisplay = this.changeDisplay;
+            if (typeof changeDisplay === 'boolean') {
+                return changeDisplay;
+            }
+            return !!changeDisplay.info;
+        },
+        canChangePath: function() {
+            const changeDisplay = this.changeDisplay;
+            if (typeof changeDisplay === 'boolean') {
+                return changeDisplay;
+            }
+            return !!changeDisplay.path;
         },
     },
     methods: {
@@ -371,10 +427,20 @@ export default {
                 this.village.toggleOutsideCell(cell);
             }
         },
+        switchDisplay: function(attribute) {
+            let value = this.currentDisplay[attribute];
+
+            if (attribute === 'path') {
+                value = (value + 2) % 3;
+            } else {
+                value = !value;
+            }
+            this.currentDisplay[attribute] = value;
+        },
     },
     watch: {
         display: function() {
-            this.currentDisplay = this.display;
+            this.currentDisplay = Object.assign({}, this.display);
         },
     },
 };
@@ -478,5 +544,8 @@ export default {
         fill: #e3e3e3;
         stroke-width: 2px;
         stroke: black;
+    }
+    .switch-display {
+        margin-right: 1em;
     }
 </style>

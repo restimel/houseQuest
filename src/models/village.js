@@ -27,6 +27,10 @@ const Village = Vue.component('Village', {
             type: Boolean,
             default: false,
         },
+        forceAnalyze: {
+            type: Boolean,
+            default: true,
+        },
         result: {
             type: Object,
             required: false,
@@ -207,7 +211,7 @@ const Village = Vue.component('Village', {
             }
         },
         _runAnalyze: function() {
-            if (!this.withoutAnalyze && this.isAnalyzeResultEmpty) {
+            if (!this.withoutAnalyze && (this.forceAnalyze || this.isAnalyzeResultEmpty)) {
                 const workerAnalyze = () => {
                     if (workerLimitation > 0) {
                         workerLimitation--;

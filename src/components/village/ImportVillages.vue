@@ -50,6 +50,14 @@
             </label>
         </template>
     </div>
+    <footer v-show="messages.length"
+        class="notification"
+        @click.stop="messages=[]"
+    >
+        <div v-for="(message, idx) of messages" :key="'message-'+idx">
+            {{message}}
+        </div>
+    </footer>
     <div class="controls"
         v-keys:k.enter="confirm"
         v-keys:k.escape="close"
@@ -81,7 +89,7 @@ export default {
             default: false,
         },
         dragFiles: {
-            type: [Object, DragEvent],
+            type: FileList,
             optional: true,
         }
     },
@@ -96,6 +104,8 @@ export default {
             conf: conf,
             display: this.show,
             datafile: '',
+            messages: [],
+            timerNotification: -1,
         };
     },
     computed: {
@@ -148,10 +158,42 @@ export default {
         },
 
         readFile: function(files) {
+            let datafile = [];
+            let header = '';
+            let nbFile = 0;
+            let managedFile = 0;
+
             for (const file of files) {
                 const reader = new FileReader();
                 reader.onloadend = (evt) => {
-                    this.datafile = evt.currentTarget.result;
+                    managedFile++;
+                    const data = evt.currentTarget.result.split('\n');
+                    const h = data[0];
+
+                    if (h === header) {
+                        data.shift();
+                        datafile = datafile.concat(data);
+                        nbFile++;
+                    } else {
+                        datafile = data;
+                        header = h;
+                        nbFile = 1;
+                    }
+                    if (managedFile >= files.length) {
+                        this.datafile = datafile.join('\n');
+
+                        const message = [];
+                        if (nbFile < managedFile) {
+                            message.push(`${managedFile - nbFile} files have been dropped`);
+                        }
+                        if (nbFile > 1) {
+                            message.push(`${nbFile} files have been merged`);
+                        }
+
+                        if (message.length) {
+                            this.notification(message);
+                        }
+                    }
                 };
                 reader.readAsText(file);
             }
@@ -175,6 +217,14 @@ export default {
             }
             return index;
         },
+        notification: function(messages) {
+            this.messages = messages;
+            this.timerNotification = setTimeout(this.clearNotification.bind(this), 10000);
+        },
+        clearNotification: function() {
+            clearTimeout(this.timerNotification);
+            this.messages = [];
+        }
     },
     watch: {
         show: function() {
@@ -185,8 +235,7 @@ export default {
             }
         },
         dragFiles: function() {
-            const dragFiles = this.dragFiles;
-            const files = dragFiles && dragFiles.dataTransfer && dragFiles.dataTransfer.files;
+            const files = this.dragFiles;
 
             if (files && files.length) {
                 this.display = true;
@@ -200,12 +249,6 @@ export default {
 </script>
 
 <style scoped>
-dialog {
-    margin-top: 25px;
-    box-shadow: 5px 5px 10px black;
-    padding: 1em;
-}
-
 header {
     font-size: 1.2em;
     margin-bottom: 1em;
@@ -225,7 +268,13 @@ label {
 }
 
 .wrong-file {
-    color: red;
+    color: var(--error-text);
+}
+
+.notification {
+    cursor: pointer;
+    padding: 0.5em;
+    background-color: var(--info-background);
 }
 
 </style>

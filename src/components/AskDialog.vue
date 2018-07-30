@@ -54,11 +54,6 @@ export default {
 </script>
 
 <style scoped>
-dialog {
-    margin-top: 25px;
-    box-shadow: 5px 5px 10px black;
-    padding: 1em;
-}
 dialog.fixed {
     /* position: fixed; */
     top: 33%;

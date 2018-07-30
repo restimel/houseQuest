@@ -21,8 +21,11 @@
         :village="village"
         :selected="selectedHouse"
         :result="village.analyzeResult"
-        display="mazeInfo"
-        :changeDisplay="['maze', 'mazeInfo']"
+        :changeDisplay="{
+            limitation: false,
+            info: true,
+            path: true,
+        }"
         @selection="selectHouse"
     />
     <houseAction
@@ -100,7 +103,7 @@ export default {
         this.refresh().then(() => this.load(this.villageList[0], true));
 
         return {
-            village: new Village({props: {synchronized: {default: true}}}),
+            village: new Village({propsData: {synchronized: true}}),
             villageList: [],
             selection: '',
             askDialog: false,

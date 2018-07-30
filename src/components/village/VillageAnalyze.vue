@@ -221,8 +221,11 @@ export default {
     },
     watch: {
         difficultyEstimation: function() {
-            this.result.difficultyPercent = this.difficultyEstimation;
-            this.result.difficulty = this.difficulty;
+            const estimation = this.difficultyEstimation;
+            if (typeof estimation === 'number' && !isNaN(estimation)) {
+                this.result.difficultyPercent = estimation;
+                this.result.difficulty = this.difficulty;
+            }
         },
     },
     components: {

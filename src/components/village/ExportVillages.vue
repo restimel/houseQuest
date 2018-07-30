@@ -94,6 +94,9 @@ export default {
                         const changes = `${column}.length`;
                         columns.push(changes);
                     }
+                } else if (data instanceof Set) {
+                    const changes = `${column}.size`;
+                    columns.push(changes);
                 } else {
                     columns.push(column);
                 }
@@ -194,12 +197,6 @@ export default {
 </script>
 
 <style scoped>
-dialog {
-    margin-top: 25px;
-    box-shadow: 5px 5px 10px black;
-    padding: 1em;
-}
-
 header {
     font-size: 1.2em;
     margin-bottom: 1em;
