@@ -174,27 +174,30 @@
             <div class="controls">
                 <button
                     :disabled="villageComputed.length === 0"
+                    title="Export results to a CSV file"
                     @click="showExport=true"
                 >
                     <Icon icon="file-import" />
-                    Export to csv
+                    Export
                 </button>
                 <button
-                    @click="showImport=true"
                     title="Import results from a CSV file"
+                    @click="showImport=true"
                 >
                     <Icon icon="file-export" />
-                    Import from csv
+                    Import
                 </button>
                 <button
                     v-show="!!selectedResult.houseId"
+                    title="Remove this result from list of results"
                     @click="removeResult"
                 >
                     <Icon icon="trash-alt" />
-                    Remove from result
+                    Remove
                 </button>
                 <button
                     v-show="!!selectedResult.houseId"
+                    title="Save this result as a &quot;Village&quot;"
                     @click="save"
                 >
                     <Icon icon="save" />
