@@ -1,5 +1,13 @@
 <template>
 <div @click="$emit('click')">
+    <div class="similar-groups">
+        <span v-if="groupLength > 1 && !isGroupedResult"
+            class="interactive-area"
+            @click.stop="$emit('expandGroup')"
+        >
+            {{groupLength}} similar results
+        </span>
+    </div>
     <Village
         :village="village"
         :display="{
@@ -33,6 +41,10 @@ export default {
                 return {};
             },
         },
+        isGroupedResult: {
+            type: Boolean,
+            default: false,
+        }
     },
     data: function() {
         const village = new Village({
@@ -51,6 +63,13 @@ export default {
     },
     created: function () {
         this.updateResult();
+    },
+    computed: {
+        groupLength: function() {
+            const groupList = this.result.groupList;
+
+            return groupList && groupList.length;
+        },
     },
     methods: {
         updateResult: function() {
@@ -83,5 +102,8 @@ export default {
 <style scoped>
 .analyzeInformation {
     padding: 0 0.4em;
+}
+.similar-groups {
+    min-height: 1.1em;
 }
 </style>
