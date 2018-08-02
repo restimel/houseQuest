@@ -6,7 +6,7 @@ const Configuration = Vue.component('Configuration', {
         this.toWatch = [
             'theme', 'villageName', 'houseName', 'timeByMaze',
             'defaultInfos', 'infos', 'resultLimitation',
-            'CSVseparator', 'CSVcolumns'
+            'CSVseparator', 'CSVcolumns', 'groupThreshold'
         ];
 
         return {
@@ -19,6 +19,7 @@ const Configuration = Vue.component('Configuration', {
             resultLimitation: 1500,
             CSVseparator: ',',
             CSVcolumns: ['result.difficultyPercent', 'houses'],
+            groupThreshold: 80,
 
             isLoaded: store.configuration.getAll().then(this.load.bind(this)),
         };

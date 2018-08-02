@@ -11,6 +11,22 @@ import Menu from '@/components/Menu';
 import conf from '@/models/configurations';
 import '@/fontAwesome';
 
+import levenshtein from 'fast-levenshtein';
+
+if (!levenshtein.percent) {
+    levenshtein.percent = function (str1, str2) {
+        const strMax = Math.max(str1.length, str2.length);
+
+        if (strMax === 0) {
+            return 100;
+        }
+
+        const dist = levenshtein.get(str1, str2);
+
+        return ((strMax - dist) / strMax) * 100;
+    };
+}
+
 export default {
     name: 'App',
     data: function() {

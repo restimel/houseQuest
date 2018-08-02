@@ -60,7 +60,7 @@ const Village = Vue.component('Village', {
         isAnalyzeResultEmpty: function() {
             const analyzeResult = this.analyzeResult;
             return Object.keys(analyzeResult).length === 0;
-        }
+        },
     },
     methods: {
         get: async function(name, asDefault = false) {

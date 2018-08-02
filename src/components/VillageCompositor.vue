@@ -56,6 +56,18 @@
                         @input="resetOffset"
                     />
                 </label>
+                <br>
+                <label title="Regroup result which are similar. This is the threshold of similarty.">
+                    Group similar results:
+                    <VueSlider
+                        class="slider"
+                        :min="0"
+                        :max="100"
+                        width="250px"
+                        formatter="{value}%"
+                        v-model="conf.groupThreshold"
+                    />
+                </label>
             </div>
             <Village
                 class="svg"
@@ -93,6 +105,12 @@
         >
             <header>
                 <h2>
+                    <Icon v-if="selectedGroup !== -1 && villageComputed.length > groupList.length"
+                        icon="arrow-alt-circle-left"
+                        class="interactive-area"
+                        title="See all results"
+                        @click.stop="selectGroup(-1)"
+                    />
                     Result
                     <span v-if="villageComputed.length > 0">({{villageComputed.length}})</span>
                     <Icon v-show="villageComputedDisplayed.length > 0"
@@ -135,15 +153,17 @@
                     class="village-result-item"
                     :class="{'result-selected': selectedResult.houseId === vResult.houseId}"
                     :result="vResult"
+                    :isGroupedResult="selectedGroup !== -1"
                     summary="true"
                     @click="selectResult(vResult.houseId)"
+                    @expandGroup="selectGroup(idx)"
                 />
                 <div
-                    v-show="villageComputed.length - villageComputedDisplayed.length > 0"
+                    v-show="nbMoreResult > 0"
                     class="village-result-item interactive-area"
                     @click="paginateResult"
                 >
-                    There are also {{villageComputed.length - villageComputedDisplayed.length}} more result.
+                    There are also {{nbMoreResult}} more result.
                 </div>
             </div>
             <VillageResultDetails
@@ -223,9 +243,12 @@ import ImportVillages from '@/components/village/ImportVillages';
 import AskDialog from '@/components/AskDialog';
 import worker from '@/core/worker';
 import VueSlider from 'vue-slider-component';
+import levenshtein from 'fast-levenshtein';
 
 import configuration from '@/configuration';
 const {village: confVillage, house: confHouse} = configuration;
+
+const configurationHeight = confVillage.sizeX * confHouse.sizeX;
 
 const emptyCell = {
     u: true,
@@ -259,7 +282,8 @@ export default {
 
         this.getFromStore();
 
-        this.villageComputedShowList = [];
+        this.villageComputedShowList = []; // used to keep a unique reference and avoid useless rerendering.
+        this.groupListOldValue = []; // used to restore value when there is no change (and avoid rerendering)
 
         return {
             conf: conf,
@@ -292,6 +316,7 @@ export default {
             dragover: false,
 
             selectedResult: {},
+            selectedGroup: -1,
         };
     },
     computed: {
@@ -327,16 +352,54 @@ export default {
         continueComputation: function() {
             return this.canCompute && this.offset > 0;
         },
+        groupList: function() {
+            const showList = this.villageComputed;
+            const groupThreshold = this.conf.groupThreshold;
+
+            const groupList = showList.reduce((list, result) => {
+                const leaderResult = list.find((r) => this.looksLike(r, result) > groupThreshold);
+
+                if (leaderResult) {
+                    leaderResult.groupList.push(result);
+                } else {
+                    result.groupList = [result];
+                    list.push(result);
+                }
+                return list;
+            }, []);
+
+            // check if there are any change from previous result
+            const idNew = groupList.map(r => r.groupList.length).join('');
+            const idOld = this.groupListOldValue.map(r => r.groupList.length).join('');
+
+            if (idNew === idOld) {
+                return this.groupListOldValue;
+            }
+
+            this.updateGroupList(groupList);
+
+            return groupList;
+        },
+        selectedGroupList: function() {
+            const selectedGroup = this.selectedGroup;
+            return selectedGroup === -1 ? this.groupList : this.groupList[selectedGroup].groupList;
+        },
         villageComputedDisplayed: function() {
             const showList = this.villageComputedShowList;
             const showLng = showList.length;
-            const computedLng = this.villageComputed.length;
+            const villageComputed = this.selectedGroupList;
+
+            const computedLng = villageComputed.length;
             const limitation = this.resultDisplayLimitation;
             if (showLng < limitation && computedLng > showLng) {
-                const items = this.villageComputed.slice(showLng, limitation);
+                const items = villageComputed.slice(showLng, limitation);
                 showList.push(...items);
             }
+
             return showList;
+        },
+        nbMoreResult: function() {
+            return this.selectedGroupList.length - this.villageComputedDisplayed.length;
         },
     },
     created: function() {
@@ -365,6 +428,10 @@ export default {
                     Vue.set(this.selectedHouse, 'info', infos);
                 }
             }
+        },
+        updateGroupList: function(groupList) {
+            this.villageComputedShowList = [];
+            this.groupListOldValue = groupList;
         },
         refresh: async function() {
             const list = await store.house.getAll();
@@ -534,6 +601,10 @@ export default {
                 this.selectedResult = this.villageComputed.find(v => v.houseId === id);
             }
         },
+        selectGroup: function(idx) {
+            this.selectedGroup = idx;
+            this.villageComputedShowList = [];
+        },
         removeResult: function() {
             const selected = this.selectedResult;
             if (selected) {
@@ -578,6 +649,56 @@ export default {
                     houses,
                 });
             });
+        },
+
+        /* Levenshtein estimation */
+        stringMovements: function(result) {
+            if (!result || !result.result.movements) {
+                return '';
+            }
+            if (result.stringMovements) {
+                return result.stringMovements;
+            }
+
+            const mvt = result.result.movements.join('');
+
+            if (mvt) {
+                result.stringMovements = mvt;
+            }
+            return mvt;
+        },
+
+        stringShortCells: function(result) {
+            if (!result || !result.result.shortestPath) {
+                return '';
+            }
+            if (result.stringShortCells) {
+                return result.stringShortCells;
+            }
+
+            const stringShortCells = Array.from(result.result.shortestPath).map((cell) => {
+                const [x, y] = cell.split(', ');
+                const code = +x + (y * configurationHeight);
+                return String.fromCharCode(code) + 32;
+            }).join('');
+
+            if (stringShortCells) {
+                result.stringShortCells = stringShortCells;
+            }
+            return stringShortCells;
+        },
+
+        looksLike: function(result1, result2) {
+            const mvt1 = this.stringMovements(result1);
+            const mvt2 = this.stringMovements(result2);
+
+            const cell1 = this.stringShortCells(result1);
+            const cell2 = this.stringShortCells(result2);
+
+            const estimationMvt = levenshtein.percent(mvt1, mvt2);
+            const estimationCell = levenshtein.percent(cell1, cell2);
+
+            return (estimationMvt + estimationCell) / 2;
         },
     },
     watch: {
