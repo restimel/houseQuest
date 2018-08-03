@@ -730,13 +730,13 @@ function compose(data, id) {
                     sendResult({
                         results: responses
                     });
-                    responses = null;
+                    responses = [];
                 }
                 // protection over infinite loop
                 if (nbTested > 2 * nbToTest) {
                     return finish();
                 } else {
-                    console.warn('Limit reach');
+                    console.warn('Limit reach', nbTested, nbToTest);
                 }
             }
 
@@ -769,7 +769,7 @@ function compose(data, id) {
             results: responses
         });
 
-        responses = null;
+        responses = [];
         setTimeout(runBash, 1, id);
     }
 

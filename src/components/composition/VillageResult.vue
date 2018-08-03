@@ -3,6 +3,7 @@
     <div class="similar-groups">
         <span v-if="groupLength > 1 && !isGroupedResult"
             class="interactive-area"
+            title="See similar results"
             @click.stop="$emit('expandGroup')"
         >
             {{groupLength}} similar results
