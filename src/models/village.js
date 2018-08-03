@@ -93,7 +93,7 @@ const Village = Vue.component('Village', {
             }
             this.name = village.name;
             this.houses = village.houses;
-            this.infos = village.infos || this._initInfos();
+            this.infos = this._initInfos(village.infos);
             this.defaultInfo = village.defaultInfo || this._getInitInfo(true);
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
@@ -170,12 +170,13 @@ const Village = Vue.component('Village', {
                 orientations: defaultOrientation,
             };
         },
-        _initInfos: function() {
+        _initInfos: function(initValue = []) {
             const length = confVillage.sizeX * confVillage.sizeY;
             const infos = this.infos || new Array(length);
 
             for (let x = 0; x < length; x++) {
-                infos[x] = this._getInitInfo();
+                const initialValue = initValue[x];
+                infos[x] = typeof initialValue === 'undefined' ? this._getInitInfo() : initialValue;
             }
             return infos;
         },
