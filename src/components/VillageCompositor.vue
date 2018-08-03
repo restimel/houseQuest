@@ -149,7 +149,7 @@
                     No results found yet :/
                 </span>
                 <VillageResult v-for="(vResult, idx) of villageComputedDisplayed"
-                    :key="'villageResult' + idx"
+                    :key="'villageResult' + vResult.houseId + '-' + vResult.groupList.length"
                     class="village-result-item"
                     :class="{'result-selected': selectedResult.houseId === vResult.houseId}"
                     :result="vResult"
@@ -287,6 +287,8 @@ export default {
 
         this.villageComputedShowList = []; // used to keep a unique reference and avoid useless rerendering.
         this.groupListOldValue = []; // used to restore value when there is no change (and avoid rerendering)
+
+        this.storeDistance = new Map();
 
         return {
             conf: conf,
@@ -565,6 +567,7 @@ export default {
                         houses,
                         result: result,
                         difficulty: data.difficulty,
+                        groupList: [],
                     });
                 });
             }
@@ -692,6 +695,10 @@ export default {
         },
 
         looksLike: function(result1, result2) {
+            const id = result1.houseId + result2.houseId;
+            if (this.storeDistance.has(id)) {
+                return this.storeDistance.get(id);
+            }
             const mvt1 = this.stringMovements(result1);
             const mvt2 = this.stringMovements(result2);
 
@@ -701,7 +708,11 @@ export default {
             const estimationMvt = levenshtein.percent(mvt1, mvt2);
             const estimationCell = levenshtein.percent(cell1, cell2);
 
-            return (estimationMvt + estimationCell) / 2;
+            const result = (estimationMvt + estimationCell) / 2
+
+            this.storeDistance.set(id, result);
+
+            return result;
         },
     },
     watch: {
