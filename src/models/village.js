@@ -163,6 +163,12 @@ const Village = Vue.component('Village', {
 
             this._runAnalyze();
         },
+        setInfos: function(infos) {
+            this.infos = this._initInfos(infos);
+        },
+        setDefaultInfos: function (infos) {
+            this.defaultInfo = infos;
+        },
         _getInitInfo: function(isDefault = false) {
             const defaultOrientation = isDefault ? ['UP'] : [];
             return {

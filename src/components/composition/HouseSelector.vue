@@ -45,23 +45,25 @@ export default {
         if (!this.list) {
             this.refresh();
         }
+
+        this.orientationOptions = [{
+            id: 'UP',
+            text: '↑',
+        }, {
+            id: 'DOWN',
+            text: '↓',
+        }, {
+            id: 'LEFT',
+            text: '←',
+        }, {
+            id: 'RIGHT',
+            text: '→',
+        }];
+
         return {
             houseNames: [],
             orientations: [],
             houseList: this.list || [],
-            orientationOptions: [{
-                id: 'UP',
-                text: '↑',
-            }, {
-                id: 'DOWN',
-                text: '↓',
-            }, {
-                id: 'LEFT',
-                text: '←',
-            }, {
-                id: 'RIGHT',
-                text: '→',
-            }],
         };
     },
     computed: {
