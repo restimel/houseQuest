@@ -289,6 +289,7 @@ export default {
         this.groupListOldValue = []; // used to restore value when there is no change (and avoid rerendering)
 
         this.storeDistance = new Map();
+        this.villageComputedNb = 0;
 
         return {
             conf: conf,
@@ -305,7 +306,6 @@ export default {
             isStopping: false,
             offset: 0,
             villageComputed: [],
-            villageComputedNb: 0,
             startCompute: -1,
             status: 'not started',
             showRemoveResult: false,
@@ -350,9 +350,6 @@ export default {
         },
         stateProgress: function() {
             return `${this.status} ${this.offset} / ${this.nbPossibilities}`;
-        },
-        watcherInfo: function() {
-            return (this.conf.infos, this.conf.defaultInfo, Date.now());
         },
         continueComputation: function() {
             return this.canCompute && this.offset > 0;
@@ -406,6 +403,9 @@ export default {
         nbMoreResult: function() {
             return this.selectedGroupList.length - this.villageComputedDisplayed.length;
         },
+        watcherInfo: function() {
+            return (this.conf.infos, this.conf.defaultInfo, Date.now());
+        },
     },
     created: function() {
         this.updateInfo();
@@ -422,17 +422,18 @@ export default {
             const defaultInfo = this.conf.defaultInfo;
             const infos = this.conf.infos;
             if (defaultInfo) {
-                this.village.defaultInfo = defaultInfo;
+                this.village.setDefaultInfos(defaultInfo);
                 if (typeof this.selectedHouse.idx === 'undefined') {
-                    Vue.set(this.selectedHouse, 'info', defaultInfo);
+                    this.selectedHouse.info = defaultInfo;
                 }
             }
             if (infos.length) {
-                this.village.infos = infos;
+                this.village.setInfos(infos);
                 if (typeof this.selectedHouse.idx === 'number') {
-                    Vue.set(this.selectedHouse, 'info', infos);
+                    this.selectedHouse.info = infos;
                 }
             }
+            Vue.set(this, 'selectedHouse', Object.assign({}, this.selectedHouse));
         },
         updateGroupList: function(groupList) {
             this.villageComputedShowList = [];
@@ -468,7 +469,7 @@ export default {
                 Vue.set(this.conf, 'infos', confInfos.slice());
             } else {
                 this.village.defaultInfo = info;
-                this.conf.defaultInfo = info;
+                Vue.set(this.conf, 'defaultInfo', info);
             }
             this.resetOffset();
         },

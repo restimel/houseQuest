@@ -37,14 +37,15 @@ const Village = Vue.component('Village', {
         },
     },
     data: function() {
+        this.updateDate = 0;
+        this.createDate = 0;
+
         return {
             name: '',
             maze: this.initMaze || [],
             houses: [],
             infos: this._initInfos(),
             defaultInfo: this._getInitInfo(true),
-            updateDate: 0,
-            createDate: 0,
             analyzeResult: {},
             conf: conf,
             disablingOutsideCells: [],
@@ -162,6 +163,12 @@ const Village = Vue.component('Village', {
             }
 
             this._runAnalyze();
+        },
+        setInfos: function(infos) {
+            this.infos = this._initInfos(infos);
+        },
+        setDefaultInfos: function (infos) {
+            this.defaultInfo = infos;
         },
         _getInitInfo: function(isDefault = false) {
             const defaultOrientation = isDefault ? ['UP'] : [];

@@ -5,7 +5,7 @@ const Configuration = Vue.component('Configuration', {
     data: function() {
         this.toWatch = [
             'theme', 'villageName', 'houseName', 'timeByMaze',
-            'defaultInfos', 'infos', 'resultLimitation',
+            'defaultInfo', 'infos', 'resultLimitation',
             'CSVseparator', 'CSVcolumns', 'groupThreshold'
         ];
 
