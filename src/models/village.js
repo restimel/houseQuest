@@ -37,14 +37,15 @@ const Village = Vue.component('Village', {
         },
     },
     data: function() {
+        this.updateDate = 0;
+        this.createDate = 0;
+
         return {
             name: '',
             maze: this.initMaze || [],
             houses: [],
             infos: this._initInfos(),
             defaultInfo: this._getInitInfo(true),
-            updateDate: 0,
-            createDate: 0,
             analyzeResult: {},
             conf: conf,
             disablingOutsideCells: [],

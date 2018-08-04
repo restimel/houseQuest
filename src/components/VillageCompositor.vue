@@ -289,6 +289,7 @@ export default {
         this.groupListOldValue = []; // used to restore value when there is no change (and avoid rerendering)
 
         this.storeDistance = new Map();
+        this.villageComputedNb = 0;
 
         return {
             conf: conf,
@@ -305,7 +306,6 @@ export default {
             isStopping: false,
             offset: 0,
             villageComputed: [],
-            villageComputedNb: 0,
             startCompute: -1,
             status: 'not started',
             showRemoveResult: false,
