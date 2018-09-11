@@ -533,8 +533,9 @@ export default {
             }
         },
         onComputeProgress: function(data) {
-            const {progress, results, offset} = data;
+            const {progress, results, offset, isInPause} = data;
             const {computeProgress: currentProgress, offset: currentOffset} = this;
+            const time1 = performance.now();
 
             if (progress > currentProgress) {
                 this.computeProgress = progress;
@@ -571,6 +572,22 @@ export default {
                         groupList: [],
                     });
                 });
+            }
+
+            if (isInPause) {
+                const time2 = performance.now();
+
+                if (time2 - time1 > 100) {
+                    setTimeout(() => {
+                        worker('continueComposition', {
+                            pause: isInPause,
+                        });
+                    }, 500);
+                } else {
+                    worker('continueComposition', {
+                        pause: isInPause,
+                    });
+                }
             }
         },
         onComputeFinished: function(data) {

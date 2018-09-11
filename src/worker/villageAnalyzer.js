@@ -26,6 +26,8 @@ const emptyCell = {
 
 const EMPTY_HOUSE = '_empty_';
 
+let breakPause = function() {};
+
 function sendMessage(message, extend = false) {
     const msg = extend ? Object.assign({}, currentResult, message) : message;
     self.postMessage(msg);
@@ -52,6 +54,9 @@ function doAction(action, data, result, id) {
             break;
         case 'stopComposition':
             currentResult.id = -1;
+            break;
+        case 'continueComposition':
+            breakPause(data.pause);
             break;
         default:
             result.error = true;
@@ -510,8 +515,10 @@ function Astar({
  */
 
 const bashTime = 1500;
+const mainTimeLimit = 5000;
 function compose(data, id) {
     // preparation
+    let mainTime = performance.now();
     const {
         mazes, mazeWidth, mazeHeight,
         mazeWidthHouse, mazeHeightHouse, houseWidth, houseHeight,
@@ -765,12 +772,22 @@ function compose(data, id) {
             });
         } while (performance.now() - time < timeLimit);
 
+        const isInTime = performance.now() - mainTime < mainTimeLimit;
+
         sendResult({
-            results: responses
+            results: responses,
+            isInPause: !isInTime,
         });
 
         responses = [];
-        setTimeout(runBash, 1, id);
+        if (isInTime) {
+            setTimeout(runBash, 1, id);
+        } else {
+            breakPause = function() {
+                mainTime = performance.now();
+                runBash(id);
+            };
+        }
     }
 
     function nextAction(index = possibilities.length - 1) {
