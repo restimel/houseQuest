@@ -564,11 +564,11 @@ export default {
                     }
 
                     this.villageComputed.push({
-                        houseId,
-                        maze,
-                        houses,
-                        result: result,
-                        difficulty: data.difficulty,
+                        houseId: Object.freeze(houseId),
+                        maze: Object.freeze(maze),
+                        houses: Object.freeze(houses),
+                        result: Object.freeze(result),
+                        difficulty: Object.freeze(data.difficulty),
                         groupList: [],
                     });
                 });
@@ -670,7 +670,7 @@ export default {
 
                 this.villageComputed.push({
                     houseId,
-                    houses,
+                    houses: Object.freeze(houses),
                 });
             });
         },
