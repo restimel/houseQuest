@@ -1,7 +1,7 @@
 {
   "name": "housemaze",
-  "version": "1.3.5",
-  "description": "Game design for house maze.",
+  "version": "2.0.0",
+  "description": "Game design for puzzle maze.",
   "author": "restimel <restimel@gmail.com>",
   "private": true,
   "scripts": {
