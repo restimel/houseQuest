@@ -20,6 +20,7 @@
     <Village
         :village="village"
         :selected="selectedHouse"
+        :action="activeTool"
         :result="village.analyzeResult"
         :changeDisplay="{
             limitation: false,
@@ -27,16 +28,46 @@
             path: true,
         }"
         @selection="selectHouse"
+        @cellSelection="selectCell"
     />
     <houseAction
-        class="houseAction"
+        class="houseAction right-menu"
         :selected="selectedHouse"
         @change="changeHouse"
     />
     <VillageAnalyze
-        class="villageAnalyze"
+        class="villageAnalyze right-menu"
         :result="village.analyzeResult"
     />
+    <aside class="tools left-menu">
+        <header>Tools</header>
+        <fieldset>
+            <legend>Special cells</legend>
+            <button
+                :class="{
+                    isActive: activeTool === 'startCell',
+                }"
+                @click="activeTool = activeTool === 'startCell' ? 'houseSelector' : 'startCell'"
+            >
+                Start
+            </button>
+            <button
+                :class="{
+                    isActive: activeTool === 'endCell',
+                }"
+                @click="activeTool = activeTool === 'endCell' ? 'houseSelector' : 'endCell'"
+            >
+                End
+            </button>
+        </fieldset>
+        <div class="tool-explanation">
+            <p v-for="message of toolMessage"
+                :key="message"
+            >
+                {{message}}
+            </p>
+        </div>
+    </aside>
     <div class="controls">
         <button
             :disabled="!title"
@@ -109,6 +140,7 @@ export default {
             askDialog: false,
             askDialogRemove: false,
             selectedHouse: {},
+            activeTool: 'houseSelector', /* startCell, endCell */
         };
     },
     computed: {
@@ -117,6 +149,33 @@ export default {
         },
         isNameUsed: function() {
             return this.villageList.includes(this.village.name);
+        },
+        toolMessage: function() {
+            let message = '';
+            switch(this.activeTool) {
+                case 'startCell':
+                    message = [
+                        'Add starting cell.',
+                        'Click on cell again to remove a starting cell.',
+                        '',
+                        'Click again on tool button to stop this tool.',
+                    ];
+                    break;
+                case 'endCell':
+                    message = [
+                        'Add ending cell.',
+                        'Click on cell again to remove an ending cell.',
+                        '',
+                        'Click again on tool button to stop this tool.',
+                    ];
+                    break;
+                case 'houseSelector':
+                default:
+                    message = ['Click on a house area to select it.'];
+                    break;
+            }
+
+            return message;
         },
     },
     methods: {
@@ -148,6 +207,9 @@ export default {
             this.askDialog = false;
         },
         selectHouse: function(house, idx) {
+            if (this.activeTool !== 'houseSelector') {
+                return;
+            }
             if (this.selectedHouse.idx === idx) {
                 const [name, orientation] = house.split('§');
                 const newOrientation = orientations[(orientations.indexOf(orientation) + 1)%orientations.length];
@@ -157,6 +219,38 @@ export default {
                     house: house,
                     idx: idx,
                 };
+            }
+        },
+        selectCell: function({x, y, z}) {
+            const id = `${x}, ${y}, ${z}`;
+
+            switch (this.activeTool) {
+                case 'startCell':
+                    {
+                        const starts = this.village.listStart;
+                        const index = starts.indexOf(id);
+                        if (index === -1) {
+                            starts.push(id);
+                        } else {
+                            starts.splice(index, 1);
+                        }
+                        this.village.starts = starts;
+                        break;
+                    }
+                case 'endCell':
+                    {
+                        const ends = this.village.listEnd;
+                        const index = ends.indexOf(id);
+                        if (index === -1) {
+                            ends.push(id);
+                        } else {
+                            ends.splice(index, 1);
+                        }
+                        this.village.ends = ends;
+                        break;
+                    }
+                default:
+                    break;
             }
         },
         changeHouse: function(house) {
@@ -180,11 +274,11 @@ export default {
 .sharedArea {
     display: grid;
     grid-template:
-        "header headerSelector" 30px
-        "svg action" 1fr
-        "svg analyze" 2fr
-        ". controls" 35px
-        / 1fr 300px;
+        "header header headerSelector" 30px
+        "tools svg action" 1fr
+        "tools svg analyze" 2fr
+        ". svg controls" 35px
+        / 200px 1fr 300px;
 }
 header {
     grid-area: header;
@@ -201,9 +295,19 @@ h2 {
 .svg-container {
     grid-area: svg;
 }
-aside {
+.tools {
+    grid-area: tools;
+}
+.right-menu {
     border-left: var(--aside-left-border);
     border-top: var(--aside-top-border);
+    padding: 1em;
+    overflow: auto;
+}
+.left-menu {
+    border-right: var(--aside-right-border);
+    border-top: var(--aside-top-border);
+    border-bottom: var(--aside-top-border);
     padding: 1em;
     overflow: auto;
 }
@@ -216,5 +320,24 @@ aside {
 .controls button {
     cursor: pointer;
     height: 30px;
+}
+.tool-explanation {
+    background: var(--tool-explanation-background);
+    color: var(--tool-explanation-color);
+    margin-top: 1rem;
+    padding: 0.5em;
+    text-align: justify;
+    font-size: 0.8em;
+}
+.tool-explanation p {
+    padding: 0;
+    margin: 0;
+    margin-top: 0.3em;
+    margin-bottom: 0.3em;
+    min-height: 1em;
+}
+.isActive {
+    background: var(--active-tool-background);
+    color: var(--active-tool-color);
 }
 </style>

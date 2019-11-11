@@ -158,7 +158,7 @@ export default {
     grid-template:
         "header headerSelector" 30px
         "svg options" 1fr
-        ". controls" 35px
+        "svg controls" 35px
         / 1fr 300px;
 }
 header {

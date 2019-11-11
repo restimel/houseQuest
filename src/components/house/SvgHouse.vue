@@ -5,6 +5,7 @@
         <path id="wallUp" d="M0,0 h100" />
         <path id="wallRight" d="M100,0 v100" />
         <path id="wallDown" d="M0,100 h100" />
+        <circle id="hole" :r="size/2-10" />
     </defs>
     <g>
         <rect
@@ -22,10 +23,11 @@
             <g v-for="(cell, idy) of cellColumn"
                 :key="'cell-'+idx+'-'+idy"
             >
-                <use :x="idx * size" :y="idy * size" href="#wallLeft" class="wall" :class="{isSolidWall: !cell.l}" @click="changeWall(idx, idy, 'l')" />
-                <use :x="idx * size" :y="idy * size" href="#wallRight" class="wall" :class="{isSolidWall: !cell.r}" @click="changeWall(idx, idy, 'r')" />
-                <use :x="idx * size" :y="idy * size" href="#wallUp" class="wall" :class="{isSolidWall: !cell.u}" @click="changeWall(idx, idy, 'u')" />
-                <use :x="idx * size" :y="idy * size" href="#wallDown" class="wall" :class="{isSolidWall: !cell.d}" @click="changeWall(idx, idy, 'd')" />
+                <use :x="idx * size + size / 2" :y="idy * size + size / 2" href="#hole" class="hole" :class="{isRealHole: cell.b}" @click.stop="changeWall(idx, idy, 'b')" />
+                <use :x="idx * size" :y="idy * size" href="#wallLeft" class="wall" :class="{isSolidWall: !cell.l}" @click.stop="changeWall(idx, idy, 'l')" />
+                <use :x="idx * size" :y="idy * size" href="#wallRight" class="wall" :class="{isSolidWall: !cell.r}" @click.stop="changeWall(idx, idy, 'r')" />
+                <use :x="idx * size" :y="idy * size" href="#wallUp" class="wall" :class="{isSolidWall: !cell.u}" @click.stop="changeWall(idx, idy, 'u')" />
+                <use :x="idx * size" :y="idy * size" href="#wallDown" class="wall" :class="{isSolidWall: !cell.d}" @click.stop="changeWall(idx, idy, 'd')" />
             </g>
         </g>
     </template>
@@ -80,7 +82,7 @@ export default {
         changeWall: function(x, y, side) {
             const cell1 = this.house.maze[x][y];
             const value = !cell1[side];
-            
+
             cell1[side] = value;
             switch(side) {
                 case 'l':
@@ -94,6 +96,11 @@ export default {
                     break;
                 case 'd':
                     this.house.setCell(x, y+1, {u: value});
+                    break;
+                case 'b':
+                    this.house.setCell(x, y, {b: value});
+                    break;
+                case 't':
                     break;
             }
         }
@@ -124,5 +131,20 @@ export default {
     }
     .isSolidWall:hover {
         stroke: var(--house-wall-hover);
+    }
+
+    .hole {
+        stroke: none;
+        fill: rgba(0, 0, 0, 0);
+        cursor: pointer;
+    }
+    .hole:hover {
+        fill: var(--house-no-wall-hover);
+    }
+    .isRealHole {
+        fill: var(--house-wall);
+    }
+    .isRealHole:hover {
+        fill: var(--house-wall-hover);
     }
 </style>

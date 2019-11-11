@@ -35,6 +35,18 @@ const Village = Vue.component('Village', {
             type: Object,
             required: false,
         },
+        starts: {
+            type: Array,
+            default: () => {
+                return confVillage.starts.slice();
+            },
+        },
+        ends: {
+            type: Array,
+            default: () => {
+                return confVillage.ends.slice();
+            },
+        },
     },
     data: function() {
         this.updateDate = 0;
@@ -45,21 +57,23 @@ const Village = Vue.component('Village', {
             maze: this.initMaze || [],
             houses: [],
             infos: this._initInfos(),
-            defaultInfo: this._getInitInfo(true),
+            defaultInfo: this._getInitInfo({}, true),
             analyzeResult: {},
             conf: conf,
             disablingOutsideCells: [],
+            listStart: this.starts.slice(),
+            listEnd: this.ends.slice(),
         };
     },
     computed: {
-        starts: function() {
-            return confVillage.starts.filter(cell => !this.disablingOutsideCells.includes(cell));
+        startCells: function() {
+            return this.listStart.filter(cell => !this.disablingOutsideCells.includes(cell));
         },
-        ends: function() {
-            return confVillage.ends.filter(cell => !this.disablingOutsideCells.includes(cell));
+        endCells: function() {
+            return this.listEnd.filter(cell => !this.disablingOutsideCells.includes(cell));
         },
         isAnalyzeResultEmpty: function() {
-            const analyzeResult = this.analyzeResult;
+        const analyzeResult = this.analyzeResult;
             return Object.keys(analyzeResult).length === 0;
         },
     },
@@ -84,20 +98,24 @@ const Village = Vue.component('Village', {
             this.name = name;
             this.analyzeResult = {};
             let village = await store.village.get(name);
-            if (!village) {
-                village = {
-                    name: name,
-                    houses: [],
-                    updateDate: 0,
-                    createDate: 0,
-                };
-            }
+
+            village = Object.assign({
+                name: name,
+                houses: [],
+                updateDate: 0,
+                createDate: 0,
+                starts: confVillage.starts,
+                ends: confVillage.ends,
+            }, village);
+
             this.name = village.name;
             this.houses = village.houses;
             this.infos = this._initInfos(village.infos);
-            this.defaultInfo = village.defaultInfo || this._getInitInfo(true);
+            this.defaultInfo = this._getInitInfo(village.defaultInfo, true);
             this.updateDate = village.updateDate;
             this.createDate = village.createDate;
+            this.listStart = village.starts.slice();
+            this.listEnd = village.ends.slice();
 
             if (!asDefault) {
                 this.sync();
@@ -116,6 +134,8 @@ const Village = Vue.component('Village', {
                 defaultInfo: this.defaultInfo,
                 updateDate: this.updateDate,
                 createDate: this.createDate,
+                starts: this.listStart,
+                ends: this.listEnd,
             });
 
             p.then(() => this.sync());
@@ -140,10 +160,10 @@ const Village = Vue.component('Village', {
             this.analyzeResult = {};
             if (!keepInfos) {
                 this.infos = this._initInfos();
-                this.defaultInfo = this._getInitInfo(true);
+                this.defaultInfo = this._getInitInfo({}, true);
             }
 
-            const length = confVillage.sizeX * confVillage.sizeY;
+            const length = confVillage.sizeX * confVillage.sizeY * confVillage.sizeZ;
             for (let x = 0; x < length; x++) {
                 this.houses.push('_empty_§UP');
             }
@@ -170,12 +190,12 @@ const Village = Vue.component('Village', {
         setDefaultInfos: function (infos) {
             this.defaultInfo = infos;
         },
-        _getInitInfo: function(isDefault = false) {
+        _getInitInfo: function(obj = {}, isDefault = false) {
             const defaultOrientation = isDefault ? ['UP'] : [];
-            return {
+            return Object.assign({
                 houses: [],
                 orientations: defaultOrientation,
-            };
+            }, obj);
         },
         _initInfos: function(initValue = []) {
             const length = confVillage.sizeX * confVillage.sizeY;
@@ -183,25 +203,32 @@ const Village = Vue.component('Village', {
 
             for (let x = 0; x < length; x++) {
                 const initialValue = initValue[x];
-                infos[x] = typeof initialValue === 'undefined' ? this._getInitInfo() : initialValue;
+                infos[x] = this._getInitInfo(initialValue);
             }
             return infos;
         },
         _initMaze: function() {
             const xLength = confVillage.sizeX * confHouse.sizeX;
             const yLength = confVillage.sizeY * confHouse.sizeY;
+            const zLength = confVillage.sizeZ;
 
             const maze = new Array(xLength);
             for (let x = 0; x < xLength; x++) {
                 const column = new Array(yLength)
                 maze[x] = column;
                 for (let y = 0; y < yLength; y++) {
-                    column[y] = {
-                        u: true,
-                        d: true,
-                        l: true,
-                        r: true,
-                    };
+                    const cells = new Array(zLength);
+                    column[y] = cells;
+                    for (let z = 0; z < zLength; z++) {
+                        cells[z] = {
+                            u: true,
+                            d: true,
+                            l: true,
+                            r: true,
+                            b: false,
+                            t: false,
+                        };
+                    }
                 }
             }
 
@@ -225,8 +252,8 @@ const Village = Vue.component('Village', {
                         workerLimitation--;
                         worker('analyze', {
                             maze: this.maze,
-                            starts: this.starts,
-                            ends: this.ends,
+                            starts: this.startCells,
+                            ends: this.endCells,
                         }).then((result) => {
                             workerLimitation++;
                             this.analyze(result);
@@ -243,10 +270,19 @@ const Village = Vue.component('Village', {
         result: function(result) {
             this.analyzeResult = result;
         },
+        starts: function() {
+            this.listStart = this.starts.slice();
+            this._runAnalyze();
+        },
+        ends: function() {
+            this.listEnd = this.ends.slice();
+            this._runAnalyze();
+        },
         houses: async function() {
             const houses = this.houses;
             const confVillageSizeX = confVillage.sizeX;
             const confVillageSizeY = confVillage.sizeY;
+            const confVillageSizeZ = confVillage.sizeZ;
             const houseMaze = new Array(confVillageSizeX);
             const promises = [];
 
@@ -255,57 +291,71 @@ const Village = Vue.component('Village', {
             for (let x = 0; x < confVillageSizeX; x++) {
                 houseMaze[x] = new Array(confVillageSizeY);
                 for (let y = 0; y < confVillageSizeY; y++) {
-                    const house = new House();
-                    houseMaze[x][y] = house;
-                    const cellHouse = houses[x * confVillageSizeX + y];
-                    const [houseName, orientation] = (cellHouse || '').split('§');
-                    house.orientation = orientation;
-                    promises.push(house.get(houseName));
+                    houseMaze[x][y] = new Array(confVillageSizeZ);
+                    for (let z = 0; z < confVillageSizeZ; z++) {
+                        const house = new House();
+                        houseMaze[x][y][z] = house;
+                        const cellHouse = houses[x * confVillageSizeY + y + z * confVillageSizeY * confVillageSizeX];
+                        const [houseName, orientation] = (cellHouse || '').split('§');
+                        house.orientation = orientation;
+                        promises.push(house.get(houseName));
+                    }
                 }
             }
 
             await Promise.all(promises);
             const xLength = confVillageSizeX * confHouse.sizeX;
             const yLength = confVillageSizeY * confHouse.sizeY;
+            const zLength = confVillageSizeZ;
 
-            const getCell = (x, y) => {
-                const villageX = Math.floor(x / confHouse.sizeX)
+            const getCell = (x, y, z) => {
+                const villageX = Math.floor(x / confHouse.sizeX);
                 const houseX = x % confHouse.sizeX;
-                const villageY = Math.floor(y / confHouse.sizeY)
+                const villageY = Math.floor(y / confHouse.sizeY);
                 const houseY = y % confHouse.sizeY;
+                const villageZ = z;
 
                 const houseMazeX = houseMaze[villageX];
-                if (houseMazeX && houseMazeX[villageY]) {
-                    return houseMazeX[villageY].getCell(houseX, houseY);
+                if (houseMazeX && houseMazeX[villageY] && houseMazeX[villageY][villageZ]) {
+                    return houseMazeX[villageY][villageZ].getCell(houseX, houseY);
                 }
 
-                if (confVillage.starts.includes(`${x}, ${y}`) || confVillage.ends.includes(`${x}, ${y}`)) {
+                if (this.listStart.includes(`${x}, ${y}, ${z}`) || this.listEnd.includes(`${x}, ${y}, ${z}`)) {
                     return {
                         u: true, // up
                         d: true, // down
                         l: true, // left
                         r: true, // right
+                        b: false, // bottom
+                        t: false, // top
                     };
                 }
+                // false → wall | true → passage
                 return {
                     u: false, // up
                     d: false, // down
                     l: false, // left
                     r: false, // right
+                    b: false, // bottom
+                    t: false, // top
                 };
             }
 
             const maze = this.maze;
             for (let x = 0; x < xLength; x++) {
                 for (let y = 0; y < yLength; y++) {
-                    const cell0 = getCell(x, y);
-                    const cell = {
-                        u: cell0.u && getCell(x, y - 1).d, // up
-                        d: cell0.d && getCell(x, y + 1).u, // down
-                        l: cell0.l && getCell(x - 1, y).r, // left
-                        r: cell0.r && getCell(x + 1, y).l, // right
-                    };
-                    maze[x][y] = cell;
+                    for (let z = 0; z < zLength; z++) {
+                        const cell0 = getCell(x, y, z);
+                        const cell = {
+                            u: cell0.u && getCell(x, y - 1, z).d, // up
+                            d: cell0.d && getCell(x, y + 1, z).u, // down
+                            l: cell0.l && getCell(x - 1, y, z).r, // left
+                            r: cell0.r && getCell(x + 1, y, z).l, // right
+                            b: cell0.b && z < zLength - 1, // bottom (this information set the top information of opposing cell)
+                            t: getCell(x, y, z - 1).b, // top (this is a soft information)
+                        };
+                        maze[x][y][z] = cell;
+                    }
                 }
             }
             this._runAnalyze();

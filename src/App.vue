@@ -55,6 +55,7 @@ body {
 }
 header {
     text-align: center;
+    font-size: 1.3em;
 }
 .page-view {
     padding: 1em;
@@ -136,12 +137,18 @@ dialog {
     --house-selected-border: rgba(250, 230, 0, 0.8);
     --information-not-resolvable: rgb(255, 0, 0);
     --information-resolvable: rgb(0, 120, 0);
+    --active-tool-background: var(--active-link);
+    --active-tool-color: var(--menu-background);
 
     --aside-left-border: 5px solid var(--menu-background);
+    --aside-right-border: 5px solid var(--menu-background);
     --aside-top-border: 1px solid var(--menu-background);
     --selected-item-border: 3px outset var(--menu-background);
 
     --selected-item-background: var(--menu-background);
+
+    --tool-explanation-background: rgba(255, 255, 255, 0.2);
+    --tool-explanation-color: var(--text-color);
 
     /* Layers (for z-index) */
     --layer-dialog: 200;
@@ -177,11 +184,17 @@ dialog {
     --house-selected-border: rgba(250, 250, 0, 0.8);
     /* --information-not-resolvable: rgb(255, 0, 0); */
     /* --information-resolvable: rgb(0, 120, 0); */
+    --active-tool-background: var(--active-link);
+    --active-tool-color: var(--menu-background);
 
     --aside-left-border: 5px solid var(--menu-background);
+    --aside-right-border: 5px solid var(--menu-background);
     --aside-top-border: 1px solid var(--menu-background);
     --selected-item-border: 4px outset var(--menu-background);
 
     --selected-item-background: var(--menu-background);
+
+    /* --tool-explanation-background: rgba(255, 255, 255, 0.2); */
+    --tool-explanation-color: var(--text-color);
 }
 </style>

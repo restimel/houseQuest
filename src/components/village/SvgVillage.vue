@@ -30,8 +30,13 @@
             <path id="wallUp" d="M0,0 h100" />
             <path id="wallRight" d="M100,0 v100" />
             <path id="wallDown" d="M0,100 h100" />
+            <circle id="hole" :r="size/2-10" />
         </defs>
-        <g>
+        <g v-for="zIdx of ZList"
+            :key="'village-' + zIdx"
+            :style="`transform: translate(0, ${1100 * zIdx}px)`"
+            @mouseleave="mouseout"
+        >
             <rect
                 class="villageWall"
                 x="0"
@@ -41,9 +46,9 @@
             />
 
             <!-- start cells -->
-            <g v-for="start of starts" :key="'start-'+start"
-                @click="toggleOutsideCell(start)"
+            <g v-for="start of getStarts(zIdx)" :key="'start-'+start"
                 class="{'interactive-area': !readonly}"
+                @click="toggleOutsideCell(start)"
             >
                 <rect
                     class="villageStart"
@@ -61,9 +66,9 @@
                 />
             </g>
             <!-- end cells -->
-            <g v-for="end of ends" :key="'end-'+end"
-                @click="toggleOutsideCell(end)"
+            <g v-for="end of getEnds(zIdx)" :key="'end-'+end"
                 class="interactive-area"
+                @click="toggleOutsideCell(end)"
             >
                 <rect
                     class="villageEnd"
@@ -84,15 +89,17 @@
             <!-- maze cells -->
             <template v-if="isMaze">
                 <g v-for="(cellColumn, idx) of village.maze"
-                    :key="'villageCellColumn-'+idx"
+                    :key="'villageCellColumn-['+zIdx+']'+idx"
                 >
                     <g v-for="(cell, idy) of cellColumn"
-                        :key="'villageCell-'+idx+'-'+idy"
+                        :key="'villageCell-['+zIdx+']'+idx+'-'+idy"
+                        @mousemove="mouseover(idx, idy, zIdx)"
                     >
-                        <use :x="idx * size" :y="idy * size" href="#wallLeft" class="wall" :class="{isSolidWall: !cell.l}" :rid="renderId" />
-                        <use :x="idx * size" :y="idy * size" href="#wallRight" class="wall" :class="{isSolidWall: !cell.r}" :rid="renderId" />
-                        <use :x="idx * size" :y="idy * size" href="#wallUp" class="wall" :class="{isSolidWall: !cell.u}" :rid="renderId" />
-                        <use :x="idx * size" :y="idy * size" href="#wallDown" class="wall" :class="{isSolidWall: !cell.d}" :rid="renderId" />
+                        <use :x="idx * size + size / 2" :y="idy * size + size / 2" href="#hole" class="hole" :class="{isRealHole: zIdx < sizeZ-1 && cell[zIdx].b}" :rid="renderId" />
+                        <use :x="idx * size" :y="idy * size" href="#wallLeft" class="wall" :class="{isSolidWall: !cell[zIdx].l}" :rid="renderId" />
+                        <use :x="idx * size" :y="idy * size" href="#wallRight" class="wall" :class="{isSolidWall: !cell[zIdx].r}" :rid="renderId" />
+                        <use :x="idx * size" :y="idy * size" href="#wallUp" class="wall" :class="{isSolidWall: !cell[zIdx].u}" :rid="renderId" />
+                        <use :x="idx * size" :y="idy * size" href="#wallDown" class="wall" :class="{isSolidWall: !cell[zIdx].d}" :rid="renderId" />
                     </g>
                 </g>
             </template>
@@ -100,17 +107,17 @@
             <!-- path arrows -->
             <template v-if="arrowCells">
                 <g v-for="(cellColumn, idx) of arrowCells"
-                    :key="'resultCellColumn-'+idx"
+                    :key="'resultCellColumn-'+idx+'/'+zIdx"
                 >
                     <g v-for="(cell, idy) of cellColumn"
-                        :key="'resultCell-'+idx+'-'+idy"
+                        :key="'resultCell-'+idx+'-'+idy+'/'+zIdx"
                     >
                         <use href="#arrow"
-                            v-if="cell.orientation"
-                            :class="result.shortestPath.has(idx+', '+idy) ? 'solution' : 'notSolution'"
+                            v-if="cell[zIdx].orientation"
+                            :class="result.shortestPath.has(idx+', '+idy+ ', '+zIdx) ? 'solution' : 'notSolution'"
                             x="0"
                             y="0"
-                            :transform="transformXYArrow(idx, idy, cell.orientation)"
+                            :transform="transformXYArrow(idx, idy, cell[zIdx].orientation)"
                         />
                     </g>
                 </g>
@@ -118,8 +125,8 @@
 
             <!-- information about houses and orientation limitation -->
             <template v-if="isLimitation">
-                <g v-for="(cellHouse, idx) of village.houses"
-                    :key="'villageHouseInfo-'+idx"
+                <g v-for="(cellHouse, idx) of levelHouses(zIdx)"
+                    :key="'villageHouseInfo-'+idx+'-'+zIdx"
                 >
                     <rect
                         class="houseInfoArea"
@@ -149,10 +156,10 @@
 
             <!-- info (detail) of this house -->
             <template v-if="isDetailed">
-                <g v-for="(cellHouse, idx) of village.houses"
+                <g v-for="(cellHouse, idx) of levelHouses(zIdx)"
                     :key="'villageHouseDetail-'+idx"
                 >
-                    <title>{{getHouseDetail(idx)}}</title>
+                    <title>{{getHouseDetail(idx, zIdx)}}</title>
                     <rect
                         class="houseDetailArea"
                         :x="(getHouseX(idx) + 0.5) * houseWidth"
@@ -167,23 +174,40 @@
                             :x="(getHouseX(idx) + 0.75) * houseWidth"
                             :y="getHouseY(idx) * houseHeight + 40"
                         >
-                            {{getHouseDetail(idx)}}
+                            {{getHouseDetail(idx, zIdx)}}
                         </tspan>
                     </text>
                 </g>
             </template>
 
             <!-- selectable area -->
-            <template v-if="!readonly">
-                <rect v-for="(cellHouse, idx) of village.houses"
-                    :key="'villageHouse-'+idx"
+            <template v-if="!readonly && houseSelectable">
+                <rect v-for="(cellHouse, idx) of levelHouses(zIdx)"
+                    :key="'villageHouse-'+idx+'-'+zIdx"
                     class="houseArea"
-                    :class="{selectedHouse: selected.idx === idx}"
+                    :class="{
+                        selectedHouse: selected.idx === (idx + zIdx * nbHousePerLvl),
+                        'houseArea-selectable': houseSelectable,
+                    }"
                     :x="getHouseX(idx) * houseWidth"
                     :y="getHouseY(idx) * houseHeight"
                     :width="houseWidth"
                     :height="houseHeight"
-                    @click="selectHouse(cellHouse, idx)"
+                    @click="selectHouse(cellHouse, idx, zIdx)"
+                />
+            </template>
+            <template v-if="!readonly && cellSelectable">
+                <rect v-if="mouseCell.z === zIdx && mouseCell.x >= 0 && mouseCell.y >= 0"
+                    class="cellArea"
+                    :class="{
+                        selectedCell: true,
+                        'cellArea-selectable': cellSelectable,
+                    }"
+                    :x="mouseCell.x * size"
+                    :y="mouseCell.y * size"
+                    :width="size"
+                    :height="size"
+                    @click="selectCell(mouseCell)"
                 />
             </template>
         </g>
@@ -227,6 +251,10 @@ export default {
                 return {};
             },
         },
+        action: {
+            type: String,
+            default: 'houseSelector',
+        },
         result: {
             type: Object,
             default: function() {
@@ -257,10 +285,9 @@ export default {
 
         return {
             size: 100,
-            starts: confVillage.starts,
-            ends: confVillage.ends,
             renderId: 0,
             currentDisplay: Object.assign({}, this.display),
+            mouseCell: {},
         };
     },
     created: function() {
@@ -275,6 +302,9 @@ export default {
         sizeY: function() {
             return (this.village.maze[0] || []).length;
         },
+        sizeZ: function() {
+            return (this.village.maze[0] && this.village.maze[0][0] || []).length;
+        },
         width: function() {
             return this.sizeX * this.size;
         },
@@ -285,13 +315,24 @@ export default {
             return this.width + 2 * this.size;
         },
         svgHeight: function() {
-            return this.height + 2 * this.size;
+            return (this.height + 2 * this.size) * this.sizeZ;
         },
         houseWidth: function() {
             return confHouse.sizeX * this.size;
         },
         houseHeight: function() {
             return confHouse.sizeY * this.size;
+        },
+        nbHousePerLvl: function() {
+            return confVillage.sizeX * confVillage.sizeY;
+        },
+        ZList: function() {
+            const sizeZ = this.sizeZ;
+            const list = new Array(sizeZ);
+            for (let z = 0; z < sizeZ; z++) {
+                list[z] = z;
+            }
+            return list;
         },
         isMaze: function() {
             return !this.isLimitation && this.village.maze[0];
@@ -348,6 +389,12 @@ export default {
             }
             return !!changeDisplay.path;
         },
+        houseSelectable: function() {
+            return this.action === 'houseSelector';
+        },
+        cellSelectable: function() {
+            return ['startCell', 'endCell'].includes(this.action);
+        },
     },
     methods: {
         cellX: function(cell) {
@@ -385,9 +432,23 @@ export default {
             }
             return text;
         },
-        getHouseDetail: function(idx) {
-            const [name, orientation] = this.village.houses[idx].split('§');
+        getHouseDetail: function(idx, zIdx) {
+            const index = zIdx * this.nbHousePerLvl + idx;
+            const [name, orientation] = this.village.houses[index].split('§');
             return `${name} ${arrows[orientation]}`;
+        },
+        getStarts: function(zIdx) {
+            return this.village.listStart.filter((cellId) => +cellId.split(/,\s*/)[2] === zIdx);
+        },
+
+        getEnds: function(zIdx) {
+            return this.village.listEnd.filter((cellId) => +cellId.split(/,\s*/)[2] === zIdx);
+        },
+        levelHouses: function(zIdx) {
+            const nbHousePerLvl = this.nbHousePerLvl;
+            const offset = zIdx * nbHousePerLvl;
+
+            return this.village.houses.slice(offset, offset + nbHousePerLvl);
         },
         transformXYArrow: function(x, y, orientation) {
             let deg = 0;
@@ -419,8 +480,18 @@ export default {
             }
             return `translate(${x}, ${y}) rotate(${deg})`;
         },
-        selectHouse: function(house, idx) {
-            this.$emit('selection', house, idx);
+        selectHouse: function(house, idx, zIdx) {
+            if (this.action !== 'houseSelector') {
+                return;
+            }
+            const index = idx + zIdx * this.nbHousePerLvl;
+            this.$emit('selection', house, index);
+        },
+        selectCell: function(cell) {
+            if (!this.cellSelectable) {
+                return;
+            }
+            this.$emit('cellSelection', cell);
         },
         toggleOutsideCell: function(cell) {
             if (!this.readonly) {
@@ -437,6 +508,19 @@ export default {
             }
             this.currentDisplay[attribute] = value;
         },
+        mouseover: function(x, y, z) {
+            if (!this.cellSelectable) {
+                return;
+            }
+            const {x: oldX, y: oldY, z: oldZ} = this.mouseCell;
+
+            if (x !== oldX || y !== oldY || z !== oldZ) {
+                this.mouseCell = {x, y, z};
+            }
+        },
+        mouseout: function() {
+            this.mouseCell = {};
+        }
     },
     watch: {
         display: function() {
@@ -496,22 +580,36 @@ export default {
         stroke: var(--house-wall);
     }
 
+    .hole {
+        fill: none;
+        stroke: none;
+    }
+    .isRealHole {
+        fill: var(--house-wall);
+    }
+
     .houseInfoArea {
         fill: none;
         stroke: var(--house-wall);
     }
 
+    .cellArea,
     .houseArea {
         fill: rgba(0, 0, 0, 0);
         stroke: none;
+    }
+    .cellArea-selectable,
+    .houseArea-selectable {
         cursor: pointer;
     }
-    .houseArea:hover {
+    .cellArea-selectable:hover,
+    .houseArea-selectable:hover {
         fill: var(--house-area-hover-background);
         stroke: var(--house-area-hover-border);
         stroke-width: 5;
         stroke-dasharray: 15;
     }
+    .selectedCell,
     .selectedHouse {
         fill: var(--house-selected-background);
         stroke: var(--house-selected-border);

@@ -146,7 +146,9 @@ export default {
         },
         nbMovements: function() {
             const movements = this.result.movements || [];
-            return movements.length - 1;
+            const nbMovements = movements.length - 1;
+
+            return nbMovements < 0 ? 0 : nbMovements;
         },
         readableMovements: function() {
             const convert = {
@@ -156,18 +158,40 @@ export default {
                 'd': '↓',
                 'l': '←',
                 'r': '→',
+                'b': '⇓',
+                't': '⇑',
                 'ul': '↖',
                 'ur': '↗',
                 'dr': '↘',
                 'dl': '↙',
+                'bl': '⇙',
+                'br': '⇘',
+                'tl': '⇖',
+                'tr': '⇗',
+                'bu': '↶',
+                'bd': '⤋',
+                'tu': '⤊',
+                'td': '↺',
                 '-d': '↑',
                 '-u': '↓',
                 '-r': '←',
                 '-l': '→',
+                '-b': '⇑',
+                '-t': '⇓',
                 '-dr': '↖',
                 '-dl': '↗',
                 '-ul': '↘',
                 '-ur': '↙',
+                '-bl': '⇗',
+                '-br': '⇖',
+                '-tl': '⇙',
+                '-tr': '⇗',
+                '-bu': '↺',
+                '-bd': '⤊',
+                '-tu': '⤋',
+                '-td': '↶',
+                '?': '↝',
+                '-?': '↝',
             };
             return this.result.movements.map(d => convert[d] || '?').join(' ');
         },
@@ -178,15 +202,20 @@ export default {
             const nbMovements = 1 * weight.nbMovements;
             const nbComplexMove = 1 * weight.nbComplexMove;
             const nbHardMove = 1 * weight.nbHardMove;
+            const nbChangeLevel = 1 * weight.nbChangeLevel;
             return 0.01 + nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
         },
         difficulty: function() {
+            if (!this.result) {
+                return 0;
+            }
             const weight = this.weight;
             const nbCell = (this.result.nbCellAccessible / this.nbMaxCells) * weight.nbCellAccessible;
             const nbShtPath = (this.result.nbShortestPath / this.nbMaxCells) * weight.nbShortPath;
             const nbMovements = (this.nbMovements / (this.nbMaxCells - confVillage.sizeX)) * weight.nbMovements;
             const nbComplexMove = this.asymptotic(this.result.complexMovements, this.sizeX, 6) * weight.nbComplexMove;
             const nbHardMove = this.asymptotic(this.result.hardMovements, 9, 3) * weight.nbHardMove;
+            const nbChangeLevel = this.asymptotic(this.result.nbChangeLevel || 0, 30, 3) * weight.nbChangeLevel;
             return 0.01 + nbCell + nbShtPath + nbMovements + nbComplexMove + nbHardMove;
         },
         difficultyEstimation: function() {
