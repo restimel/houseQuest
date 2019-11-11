@@ -3,7 +3,7 @@ const store = {};
 (function() {
 
 const dbVersion = 2;
-const dbName = 'houseMaze';
+const dbName = 'cubeMaze';
 const tables = [{
     name: 'village',
     keyPath: 'name',

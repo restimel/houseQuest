@@ -3,14 +3,15 @@ import {version} from '../package.json';
 const configuration = {
     version: version,
     village: {
-        sizeX: 3,
-        sizeY: 3,
-        starts: ['-1, 5', '-1, 6', '5, -1', '6, -1', '5, 12', '6, 12'],
-        ends: ['12, 5', '12, 6'],
+        sizeX: 1,
+        sizeY: 1,
+        sizeZ: 2,
+        starts: ['0, 0, 0'],
+        ends: ['13, 8, 0'],
     },
     house: {
-        sizeX: 4,
-        sizeY: 4,
+        sizeX: 14,
+        sizeY: 9,
     },
 };
 
