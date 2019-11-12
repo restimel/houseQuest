@@ -197,7 +197,7 @@
                 </button>
                 <button
                     v-show="!!selectedResult.houseId"
-                    title="Save this result as a &quot;Village&quot;"
+                    :title="`Save this result as a &quot;${villageName}&quot;`"
                     @click="save"
                 >
                     <Icon icon="save" />
@@ -258,6 +258,8 @@ const emptyCell = {
     d: true,
     l: true,
     r: true,
+    b: true,
+    t: true,
 };
 const HOUSE_EMPTY_NAME = '_empty_';
 const HOUSE_EMPTY_ID = '_empty_';
@@ -322,18 +324,20 @@ export default {
 
             selectedResult: {},
             selectedGroup: -1,
+
+            villageName: configuration.cubeName,
         };
     },
     computed: {
         canCompute: function() {
-            return this.nbPossibilities > this.offset && this.village.starts.length && this.village.ends.length;
+            return this.nbPossibilities > this.offset && this.village.listStart.length && this.village.listEnd.length;
         },
         statusCompute: function() {
             let text = '';
             if (this.nbPossibilities <= this.offset) {
                 text = 'All possibilities are already computed';
             } else
-            if (!this.village.starts.length || !this.village.ends.length) {
+            if (!this.village.listStart.length || !this.village.listEnd.length) {
                 text = 'There is no possibility to find solvable configuration';
             }
             return text;
@@ -508,8 +512,8 @@ export default {
 
             this.startCompute = performance.now();
             worker('composition', {
-                starts: this.village.starts,
-                ends: this.village.ends,
+                starts: this.village.listStart,
+                ends: this.village.listEnd,
                 nbPossibilities: this.nbPossibilities,
                 infos: this.village.infos,
                 defaultInfo: defaultInfo,

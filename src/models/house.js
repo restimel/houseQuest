@@ -33,6 +33,8 @@ const House = Vue.component('House', {
                         d: withoutBorder || y < confHouse.sizeY - 1,
                         l: withoutBorder || x > 0,
                         r: withoutBorder || x < confHouse.sizeX -1,
+                        b: false,
+                        t: false,
                     };
                 }
                 maze[x] = column;
@@ -103,10 +105,13 @@ const House = Vue.component('House', {
             }
 
             return {
+                // false → a wall, true → possibility to move this way
                 u: false, // up
                 d: false, // down
                 l: false, // left
                 r: false, //right
+                b: false, //bottom
+                t: false, //top
             };
         },
         setCell: function(x, y, value = {}) {
@@ -114,7 +119,7 @@ const House = Vue.component('House', {
             const maze = this.maze;
             const column = maze[x];
             if (column && column[y]) {
-                Object.assign(column[y], this._orientationCell(value), '-' + this.orientation);
+                Object.assign(column[y], this._orientationCell(value, '-' + this.orientation));
             }
         },
         _orientationXY: function (x, y, orientation = this.orientation) {
@@ -166,6 +171,8 @@ const House = Vue.component('House', {
                 d: cell[d],
                 l: cell[l],
                 r: cell[r],
+                b: cell.b,
+                t: cell.t,
             };
         },
     },

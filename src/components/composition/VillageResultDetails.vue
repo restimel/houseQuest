@@ -25,7 +25,7 @@
         />
     </template>
     <AskDialog
-        title="Save village"
+        :title="`Save ${confVillageName}`"
         :show="askDialog"
         class="fixed"
         @close="askDialog=false"
@@ -34,14 +34,14 @@
         <div>
             <input
                 :class="{dialogFieldError: !villageName}"
-                placeholder="Name of the village"
+                :placeholder="`Name of the ${confVillageName}`"
                 v-model="villageName"
                 @keyup.prevent.stop.enter="checkSave"
             >
             <div v-show="isNameUsed"
                 class="dialogWarn"
             >
-                House will be overwritten
+                {{confHouseName.firstUpper()}} will be overwritten
             </div>
         </div>
     </AskDialog>
@@ -53,6 +53,7 @@ import Village from '@/models/village';
 import VillageView from '@/components/village/SvgVillage';
 import AskDialog from '@/components/AskDialog';
 import VillageAnalyze from '@/components/village/VillageAnalyze';
+import configuration from '@/configuration';
 
 export default {
     name: 'VillageResultDetails',
@@ -73,6 +74,8 @@ export default {
             askDialog: false,
             villageName: '',
             villageList: [],
+            confVillageName: configuration.cubeName,
+            confHouseName: configuration.plateName,
         };
     },
     created: function () {

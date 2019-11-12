@@ -1,10 +1,10 @@
 <template>
 <nav class="menu">
     <router-link to="house" class="link">
-        House
+        {{houseName.firstUpper()}}
     </router-link>
     <router-link to="village" class="link">
-        Village
+        {{villageName.firstUpper()}}
     </router-link>
     <router-link to="composition" class="link">
         Composition
@@ -16,8 +16,17 @@
 </template>
 
 <script>
+import configuration from '@/configuration';
+
 export default {
     name: 'Menu',
+    data: function() {
+        return {
+            villageName: configuration.cubeName,
+            houseName: configuration.plateName,
+        };
+    },
+
 };
 </script>
 

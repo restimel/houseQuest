@@ -4,11 +4,11 @@
         {{position}}
     </header>
     <label>
-        House:
+        {{houseName.firstUpper()}}:
         <multiSelect
             v-model="houseNames"
             :options="houseList"
-            title="Limit request with these houses"
+            :title="`Limit request with these ${houseNAme}s`"
             @input="change"
         />
     </label>
@@ -26,6 +26,7 @@
 
 <script>
 import store from '@/core/indexedDB';
+import configuration from '@/configuration';
 import MultiSelect from '@/components/common/MultiSelect';
 
 export default {
@@ -64,6 +65,7 @@ export default {
             houseNames: [],
             orientations: [],
             houseList: this.list || [],
+            houseName: configuration.plateName,
         };
     },
     computed: {

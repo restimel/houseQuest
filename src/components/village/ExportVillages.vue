@@ -1,7 +1,7 @@
 <template>
 <dialog :open="display">
     <slot name="header">
-        <header>Export villages to CSV</header>
+        <header>Export {{villageName}}s to CSV</header>
     </slot>
     <div class="body">
         <label>
@@ -45,6 +45,7 @@
 
 <script>
 import conf from '@/models/configurations';
+import configuration from '@/configuration';
 import SelectOrder from '@/components/common/SelectOrder';
 
 export default {
@@ -64,6 +65,7 @@ export default {
         return {
             conf: conf,
             display: this.show,
+            villageName: configuration.cubeName,
         };
     },
     computed: {

@@ -5,12 +5,12 @@
             {{position}}
         </header>
         <label>
-            House:
+            {{confHouseName.firstUpper()}}:
             <select
                 v-model="houseName"
                 @change="change"
             >
-                <option value="_empty_">No house</option>
+                <option value="_empty_">No {{confHouseName}}</option>
                 <option v-for="house of houseList"
                     :key="house"
                     :value="house"
@@ -39,6 +39,7 @@
 </template>
 
 <script>
+import configuration from '@/configuration';
 import store from '@/core/indexedDB';
 
 export default {
@@ -55,6 +56,7 @@ export default {
         this.refresh();
         return {
             houseName: '',
+            confHouseName: configuration.plateName,
             orientation: 'UP',
             houseList: [],
         };

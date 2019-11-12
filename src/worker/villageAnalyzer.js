@@ -22,6 +22,8 @@ const emptyCell = {
     d: false,
     r: false,
     l: false,
+    b: false,
+    t: false,
 };
 
 const EMPTY_HOUSE = '_empty_';
@@ -65,29 +67,30 @@ function doAction(action, data, result, id) {
 }
 
 function analyze({maze, starts, ends}) {
-    function getId(x, y) {
-        return `${x}, ${y}`;
+    const z = 0;
+    function getId(x, y, z) {
+        return `${x}, ${y}, ${z}`;
     }
-    function getCell(x, y) {
-        return maze[x] && maze[x][y] || outsideMaze.get(getId(x, y)) || emptyCell;
+    function getCell(x, y, z) {
+        return maze[x] && maze[x][y] && maze[x][y][z] || outsideMaze.get(getId(x, y, z)) || emptyCell;
     }
-    function getInfo(x, y, cellsOnly) {
+    function getInfo(x, y, z, cellsOnly) {
         if (cellsOnly) {
-            return cells[x] && cells[x][y];
+            return cells[x] && cells[x][y] && cells[x][y][z];
         }
-        return cells[x] && cells[x][y] || outsideCells.get(getId(x, y)) || {
+        return cells[x] && cells[x][y] && cells[x][y][z] || outsideCells.get(getId(x, y, z)) || {
             dist: Infinity,
             orientation: '',
             parent: NaN,
             dirParent: '',
         };
     }
-    function computeCell(x, y, dist, parent, dir) {
-        const id = getId(x, y);
+    function computeCell(x, y, z, dist, parent, dir) {
+        const id = getId(x, y, z);
         if (accessible.has(id)) {
             return;
         }
-        const cell = getInfo(x, y, true);
+        const cell = getInfo(x, y, z, true);
         if (!cell) {
             return;
         }
@@ -95,35 +98,43 @@ function analyze({maze, starts, ends}) {
         cell.parent = parent;
         cell.dirParent = dir;
         cell.orientation = dir;
-        accessible.set(id, [x, y]);
+        accessible.set(id, [x, y, z]);
     }
-    function computeSibling(x, y) {
-        const id = getId(x ,y);
-        let cell = maze[x] && maze[x][y]; // not getCell
+    function computeSibling(x, y, z = 0) {
+        const id = getId(x ,y, z);
+        let cell = maze[x] && maze[x][y] && maze[x][y][z]; // not getCell
         let dist;
         if (!cell) {
             dist = 1;
             cell = {
-                u: getCell(x, y - 1).d,
-                d: getCell(x, y + 1).u,
-                r: getCell(x + 1, y).l,
-                l: getCell(x - 1, y).r,
+                u: getCell(x, y - 1, z).d,
+                d: getCell(x, y + 1, z).u,
+                r: getCell(x + 1, y, z).l,
+                l: getCell(x - 1, y, z).r,
+                b: getCell(x, y, z + 1).t,
+                t: getCell(x, y, z - 1).b,
             };
         } else {
-            dist = getInfo(x, y).dist + 1;
+            dist = getInfo(x, y, z).dist + 1;
         }
 
         if (cell.u) {
-            computeCell(x, y-1, dist, id, 'd');
+            computeCell(x, y-1, z, dist, id, 'd');
         }
         if (cell.d) {
-            computeCell(x, y+1, dist, id, 'u');
+            computeCell(x, y+1, z, dist, id, 'u');
         }
         if (cell.r) {
-            computeCell(x+1, y, dist, id, 'l');
+            computeCell(x+1, y, z, dist, id, 'l');
         }
         if (cell.l) {
-            computeCell(x-1, y, dist, id, 'r');
+            computeCell(x-1, y, z, dist, id, 'r');
+        }
+        if (cell.b) {
+            computeCell(x, y, z+1, dist, id, 't');
+        }
+        if (cell.t) {
+            computeCell(x, y, z-1, dist, id, 'b');
         }
     }
     const incXhash = {
@@ -135,6 +146,10 @@ function analyze({maze, starts, ends}) {
         '-u': 0,
         '-r': -1,
         '-l': 1,
+        'b': 0,
+        't': 0,
+        '-b': 0,
+        '-t': 0,
     };
     const incYhash = {
         'd': 1,
@@ -145,52 +160,87 @@ function analyze({maze, starts, ends}) {
         '-u': 1,
         '-r': 0,
         '-l': 0,
+        'b': 0,
+        't': 0,
+        '-b': 0,
+        '-t': 0,
+    };
+    const incZhash = {
+        'd': 0,
+        'u': 0,
+        'r': 0,
+        'l': 0,
+        '-d': 0,
+        '-u': 0,
+        '-r': 0,
+        '-l': 0,
+        'b': 1,
+        't': -1,
+        '-b': -1,
+        '-t': 1,
     };
     const convertPosition = {
         'u': 'u',
         'd': 'd',
         'r': 'r',
         'l': 'l',
+        'b': 'b',
+        't': 't',
         '-u': 'd',
         '-d': 'u',
         '-r': 'l',
         '-l': 'r',
+        '-b': 't',
+        '-t': 'b',
     };
     const getDirection = {
         'u': 0,
         'd': 0,
         'l': 1,
         'r': 1,
+        'b': 2,
+        't': 2,
         '-u': 0,
         '-d': 0,
         '-l': 1,
         '-r': 1,
+        '-b': 2,
+        '-t': 2,
     };
-    function move(x, y, position, direction = 0) {
-        const cell = getCell(x, y);
+    function move(x, y, z, position, direction = 0) {
+        const cell = getCell(x, y, z);
         const direction2 = (direction + 1) % 2;
         // check must be done in the reverse ordrer of the direction
         const check1 = position[direction2];
         const check2 = position[direction];
-        let X, Y;
+        let X, Y, Z;
         let complexity = 0;
         if (cell[check1]) {
             const nX = x + incXhash[check1];
             const nY = y + incYhash[check1];
-            [X, Y, complexity] = move(nX, nY, position, direction2);
+            const nZ = z + incZhash[check1];
+            if (x === nX && y === nY && z === nZ) {
+                return [x, y, z, complexity];
+            }
+            [X, Y, Z, complexity] = move(nX, nY, nZ, position, direction2);
             if (cell[check2]) {
                 complexity++;
             }
         } else if (cell[check2]) {
             const nX = x + incXhash[check2];
             const nY = y + incYhash[check2];
-            [X, Y, complexity] = move(nX, nY, position, direction);
+            const nZ = z + incZhash[check2];
+            if (x === nX && y === nY && z === nZ) {
+                return [x, y, z, complexity];
+            }
+            [X, Y, Z, complexity] = move(nX, nY, nZ, position, direction);
         } else {
             X = x;
             Y = y;
+            Z = z;
         }
 
-        return [X, Y, complexity];
+        return [X, Y, Z, complexity];
     }
 
     function computeDirections() {
@@ -198,43 +248,61 @@ function analyze({maze, starts, ends}) {
         let dir;
         let shortestPathLength = Infinity;
 
-        endCells.forEach(([x, y]) => {
+        endCells.forEach(([x, y, z]) => {
             let dist;
 
-            if (getCell(x + 1, y).l) {
-                dist =  getInfo(x + 1, y).dist;
+            if (getCell(x + 1, y, z).l) {
+                dist =  getInfo(x + 1, y, z).dist;
                 if (dist < shortestPathLength) {
                     shortestPathLength = dist;
-                    lastCell = getId(x + 1, y);
+                    lastCell = getId(x + 1, y, z);
                     //dir is in opposite direction to match the "parent direction"
                     dir = 'r';
                 }
             }
 
-            if (getCell(x - 1, y).r) {
-                dist = getInfo(x - 1, y).dist;
+            if (getCell(x - 1, y, z).r) {
+                dist = getInfo(x - 1, y, z).dist;
                 if (dist < shortestPathLength) {
                     shortestPathLength = dist;
-                    lastCell = getId(x - 1, y);
+                    lastCell = getId(x - 1, y, z);
                     dir = 'l';
                 }
             }
 
-            if (getCell(x, y + 1).u) {
-                dist = getInfo(x, y + 1).dist;
+            if (getCell(x, y + 1, z).u) {
+                dist = getInfo(x, y + 1, z).dist;
                 if (dist < shortestPathLength) {
                     shortestPathLength = dist;
-                    lastCell = getId(x, y + 1);
+                    lastCell = getId(x, y + 1, z);
                     dir = 'd';
                 }
             }
 
-            if (getCell(x, y - 1).d) {
-                dist = getInfo(x, y - 1).dist;
+            if (getCell(x, y - 1, z).d) {
+                dist = getInfo(x, y - 1, z).dist;
                 if (dist < shortestPathLength) {
                     shortestPathLength = dist;
-                    lastCell = getId(x, y - 1);
+                    lastCell = getId(x, y - 1, z);
                     dir = 'u';
+                }
+            }
+
+            if (getCell(x, y, z - 1).b) {
+                dist = getInfo(x, y, z - 1).dist;
+                if (dist < shortestPathLength) {
+                    shortestPathLength = dist;
+                    lastCell = getId(x, y, z - 1);
+                    dir = 't';
+                }
+            }
+
+            if (getCell(x, y, z + 1).t) {
+                dist = getInfo(x, y, z + 1).dist;
+                if (dist < shortestPathLength) {
+                    shortestPathLength = dist;
+                    lastCell = getId(x, y, z + 1);
+                    dir = 'b';
                 }
             }
         });
@@ -243,8 +311,8 @@ function analyze({maze, starts, ends}) {
             let dist = shortestPathLength;
             /* greedy algorithm */
             do {
-                const [x, y] = lastCell.split(', ').map(x => +x);
-                const cell = getInfo(x, y);
+                const [x, y, z] = lastCell.split(', ').map(x => +x);
+                const cell = getInfo(x, y, z);
                 shortestPath.add(lastCell);
                 cell.orientation = '-' + dir;
                 dir = cell.dirParent;
@@ -256,8 +324,11 @@ function analyze({maze, starts, ends}) {
         return shortestPathLength;
     }
 
-    function computeOneMovement(x, y, pposition, isComplex, isOpposite) {
-        const info = getInfo(x, y);
+    function computeOneMovement(x, y, z, pposition, isComplex, isOpposite) {
+        const info = getInfo(x, y, z);
+        // if (!info.orientation) {
+        //     console.log(x, y, z, info, pposition);
+        // }
         let dir = convertPosition[info.orientation];
         let direction = getDirection[dir];
         const nposition = pposition.slice();
@@ -277,18 +348,19 @@ function analyze({maze, starts, ends}) {
             }
         }
 
-        let [X, Y, c] = move(x, y, nposition, direction);
+        let [X, Y, Z, c] = move(x, y, z, nposition, direction);
         c = (c > 1 ? c - 1 : 0 );
-        return [X, Y, c, hard, nposition, dir, getId(X, Y)];
+        return [X, Y, Z, c, hard, nposition, dir, getId(X, Y, Z)];
     }
 
-    function computeMovements(x, y) {
-        function buildState([x, y, complex, hard, position, mvt, id], cost) {
+    function computeMovements(x, y, z) {
+        function buildState([x, y, z, complex, hard, position, mvt, id], cost) {
             return {
                 id: id + '-' + position.join(','),
                 cid: id,
                 x: x,
                 y: y,
+                z: z,
                 position: position,
                 mvt: mvt,
                 cost: cost,
@@ -297,20 +369,19 @@ function analyze({maze, starts, ends}) {
             };
         }
 
-        let complexity = 0;
-        let hard = 0;
-        const cell = getCell(x, y);
+        const cell = getCell(x, y, z);
         let position = [
             cell.d ? 'u' : 'd',
-            cell.l ? 'r' : 'l'
+            cell.l ? 'r' : 'l',
+            cell.b ? 't' : 'b',
         ];
-        const initValues = [buildState([x, y, 0, 0, position, '', getId(x, y)], 0)];
+        const initValues = [buildState([x, y, z, 0, 0, position, '', getId(x, y, z)], 0)];
         const checkEnd = (value) => endCells.has(value.cid);
         const computeNext = (value) => {
-            const {x, y, position} = value;
-            const mvtNormal = computeOneMovement(x, y, position, false, false);
-            const mvtOpposite = computeOneMovement(x, y, position, false, true);
-            const mvtComplex = computeOneMovement(x, y, position, true, false);
+            const {x, y, z, position} = value;
+            const mvtNormal = computeOneMovement(x, y, z, position, false, false);
+            const mvtOpposite = computeOneMovement(x, y, z, position, false, true);
+            const mvtComplex = computeOneMovement(x, y, z, position, true, false);
 
             return [
                 buildState(mvtNormal, 1),
@@ -328,47 +399,77 @@ function analyze({maze, starts, ends}) {
     }
 
     function addOutside(kind, defaultDist) {
-        kind.forEach(([x, y], id) => {
-            const maze = Object.assign({}, emptyCell);
-            const cell = {
-                dist: defaultDist,
-                orientation: '',
-                parent: NaN,
-                dirParent: '',
-            };
+        kind.forEach(([x, y, z], id) => {
+            let mazeCell, cell;
+            let isInside = false;
 
-            if (kind.has(getId(x + 1, y))) {
-                maze.r = true;
-            } else if (getCell(x + 1, y).l) {
-                maze.r = true;
+            if (x >= 0 && x < mazeW && y >= 0 && y < mazeH && z >= 0 && z < mazeD) {
+                // cell inside maze
+                isInside = true;
+                mazeCell = maze[x][y][z];
+                cell = getInfo(x, y, z);
+            } else {
+                mazeCell = Object.assign({}, emptyCell);
+                cell = {
+                    dist: defaultDist,
+                    orientation: '',
+                    parent: NaN,
+                    dirParent: '',
+                };
+            }
+
+            if (kind.has(getId(x + 1, y, z))) {
+                mazeCell.r = true;
+            } else if (getCell(x + 1, y, z).l) {
+                mazeCell.r = true;
                 cell.orientation = 'r';
             }
 
-            if (kind.has(getId(x - 1, y))) {
-                maze.l = true;
-            } else if (getCell(x - 1, y).r) {
-                maze.l = true;
+            if (kind.has(getId(x - 1, y, z))) {
+                mazeCell.l = true;
+            } else if (getCell(x - 1, y, z).r) {
+                mazeCell.l = true;
                 cell.orientation = 'l';
             }
 
-            if (kind.has(getId(x, y + 1))) {
-                maze.d = true;
-            } else if (getCell(x, y + 1).u) {
-                maze.d = true;
+            if (kind.has(getId(x, y + 1, z))) {
+                mazeCell.d = true;
+            } else if (getCell(x, y + 1, z).u) {
+                mazeCell.d = true;
                 cell.orientation = 'd';
             }
 
-            if (kind.has(getId(x, y - 1))) {
-                maze.u = true;
-            } else if (getCell(x, y - 1).d) {
-                maze.u = true;
+            if (kind.has(getId(x, y - 1, z))) {
+                mazeCell.u = true;
+            } else if (getCell(x, y - 1, z).d) {
+                mazeCell.u = true;
                 cell.orientation = 'u';
             }
 
-            outsideMaze.set(id, maze);
-            outsideCells.set(id, cell);
+            // if (kind.has(getId(x, y, z + 1))) {
+            //     mazeCell.b = false;
+            // } else if (getCell(x, y, z + 1).t) {
+            //     mazeCell.b = false;
+            //     cell.orientation = 'b';
+            // }
+
+            // if (kind.has(getId(x, y, z - 1))) {
+            //     mazeCell.t = false;
+            // } else if (getCell(x, y, z - 1).b) {
+            //     mazeCell.t = false;
+            //     cell.orientation = 't';
+            // }
+
+            if (!isInside) {
+                outsideMaze.set(id, mazeCell);
+                outsideCells.set(id, cell);
+            }
         });
     }
+
+    const mazeW = maze.length;
+    const mazeH = mazeW && maze[0].length;
+    const mazeD = mazeH && maze[0][0].length;
 
     const accessible = new Map();
     const startCells = new Map(starts.map(start => [start, start.split(/,\s*/).map(x => +x)]));
@@ -376,34 +477,36 @@ function analyze({maze, starts, ends}) {
     const outsideMaze = new Map();
     const outsideCells = new Map();
 
-    addOutside(startCells, 0);
-    addOutside(endCells, Infinity);
-
     /* prepare a state for all cells to store distance and best direction */
-    const mazeW = maze.length;
     const cells = new Array(mazeW);
     for (let x = 0; x < mazeW; x++) {
-        const mazeX = maze[x];
-        const mazeH = mazeX.length;
         cells[x] = new Array(mazeH);
         for (let y = 0; y < mazeH; y++) {
-            // cells initialization
-            cells[x][y] = {
-                dist: Infinity,
-                orientation: '',
-                parent: NaN,
-                dirParent: '',
-            };
+            cells[x][y] = new Array(mazeD);
+            for (let z = 0; z < mazeD; z++) {
+                // cells initialization
+                cells[x][y][z] = {
+                    dist: Infinity,
+                    orientation: '',
+                    parent: NaN,
+                    dirParent: '',
+                };
+            }
         }
     }
 
+    /* Add start and end cells */
+    addOutside(startCells, 0);
+    addOutside(endCells, Infinity);
+
     /* check for all available cells */
     startCells.forEach((start, id) => {
+        getInfo(...start).dist = 0;
         accessible.set(id, start);
     });
 
-    accessible.forEach(([x, y]) => {
-        computeSibling(x, y);
+    accessible.forEach(([x, y, z]) => {
+        computeSibling(x, y, z);
     });
 
     /* compute directions */
@@ -415,9 +518,9 @@ function analyze({maze, starts, ends}) {
     let complexMovements = 0;
     let hardMovements = 0;
     if (isFinite(shortestPathLength)) {
-        startCells.forEach(([x, y], id) => {
+        startCells.forEach(([x, y, z], id) => {
             if (shortestPath.has(id)) {
-                [movements, complexMovements, hardMovements] = computeMovements(x, y);
+                [movements, complexMovements, hardMovements] = computeMovements(x, y, z);
             }
         });
     }
@@ -455,12 +558,14 @@ function Astar({
     function sortValues(v1, v2) {
         return v2.dh - v1.dh || v2.d - v1.d;
     }
-    function hasValues(v) {
-        const id = v.id;
-        return done.has(id) || todo.some(i => i.id === id);
-    }
+    // function hasValues(v) {
+    //     const id = v.id;
+    //     return done.has(id) || todo.some(i => i.id === id);
+    // }
 
+    // let dbg = 0;
     do {
+        // dbg++;
         todo.sort(sortValues);
         const val = todo.pop();
         done.set(val.id, val);
@@ -520,7 +625,7 @@ function compose(data, id) {
     // preparation
     let mainTime = performance.now();
     const {
-        mazes, mazeWidth, mazeHeight,
+        mazes, mazeWidth, mazeHeight, mazeDepth = 1,
         mazeWidthHouse, mazeHeightHouse, houseWidth, houseHeight,
         starts, ends,
         useOnce,
@@ -648,27 +753,38 @@ function compose(data, id) {
         return f;
     });
     function getCellChecker(cell) {
-        const [x, y] = cell.split(', ');
+        const [x, y, z] = cell.split(', ');
         let orientation = '';
         let X = +x;
         let Y = +y;
+        let Z = +z;
 
         if (X < 0) {
             X = 0;
             orientation = 'l';
         } else
-            if (X >= mazeWidth) {
-                X = mazeWidth - 1;
-                orientation = 'r';
-            }
+        if (X >= mazeWidth) {
+            X = mazeWidth - 1;
+            orientation = 'r';
+        }
+
         if (Y < 0) {
             Y = 0;
             orientation = 'u';
         } else
-            if (Y >= mazeHeight) {
-                Y = mazeHeight - 1;
-                orientation = 'd';
-            }
+        if (Y >= mazeHeight) {
+            Y = mazeHeight - 1;
+            orientation = 'd';
+        }
+
+        if (Z < 0) {
+            Z = 0;
+            orientation = 't';
+        } else
+        if (Z >= mazeDepth) {
+            Z = mazeDepth - 1;
+            orientation = 'b';
+        }
 
         const possibilityIdx = Math.floor(((X * mazeHeight) + Y) / (houseWidth * houseHeight));
         const cellX = X % houseWidth;
@@ -698,14 +814,14 @@ function compose(data, id) {
         }, true);
     }
 
-    function readCell(x, y, possibilityIdx) {
+    function readCell(houseX, houseY, possibilityIdx) {
         const possibility = possibilities[possibilityIdx];
         const house = possibility.houses[possibility.idxHouse];
         const orientation = possibility.orientations[possibility.idxOrientation];
         const maze = getHouse(house, orientation).maze;
 
-        const row = maze[x];
-        let cell = row && row[y];
+        const row = maze[houseX];
+        const cell = row && row[houseY];
 
         return cell || {};
     }
@@ -872,14 +988,14 @@ function compose(data, id) {
             if (!cell) {
                 const id = [x, y].join(', ');
                 const val = !!cellExt.find((c) => c === id);
-                return {u: val, d: val, l: val, r: val};
+                return {u: val, d: val, l: val, r: val, b: val, t: val};
             }
             return cell;
         }
 
         function copyCell(house, x, y) {
-            const {u, d, l, r} = house[x][y];
-            return {u, d, l, r};
+            const {u, d, l, r, b, t} = house[x][y];
+            return {u, d, l, r, b, t};
         }
 
         // copy houses to maze
@@ -902,20 +1018,27 @@ function compose(data, id) {
         // update border cells
         const mazeX = maze.length;
         const mazeY = maze[0].length;
+        const z = 0;
         for (let x = 0; x < mazeX; x++) {
             for (let y = 0; y < mazeY; y++) {
                 const cell = maze[x][y];
-                if (cell.u && !getCell(x, y - 1, maze).d) {
+                if (cell.u && !getCell(x, y - 1, z, maze).d) {
                     cell.u = false;
                 }
-                if (cell.d && !getCell(x, y + 1, maze).u) {
+                if (cell.d && !getCell(x, y + 1, z, maze).u) {
                     cell.d = false;
                 }
-                if (cell.r && !getCell(x + 1, y, maze).l) {
+                if (cell.r && !getCell(x + 1, y, z, maze).l) {
                     cell.r = false;
                 }
-                if (cell.l && !getCell(x - 1, y, maze).r) {
+                if (cell.l && !getCell(x - 1, y, z, maze).r) {
                     cell.l = false;
+                }
+                if (!cell.b && getCell(x, y, z + 1, maze).t) {
+                    cell.b = false;
+                }
+                if (!cell.t && getCell(x, y, z - 1, maze).b) {
+                    cell.t = false;
                 }
             }
         }
@@ -951,6 +1074,8 @@ function _initMaze(xLength, yLength) {
                 d: true,
                 l: true,
                 r: true,
+                b: false,
+                t: false,
             };
         }
     }
@@ -964,8 +1089,9 @@ function rotateHouse(house, orientation) {
     const sizeY = maze[0].length;
     const newMaze = new Array(sizeX);
 
-    function getCell(x, y) {
-        let X, Y, cell;
+    function getCell(x, y, z) {
+        let X, Y, Z, cell;
+        Z = z;
         switch(orientation) {
             case 'DOWN':
                 X = sizeX - x - 1;
@@ -976,6 +1102,8 @@ function rotateHouse(house, orientation) {
                     d: cell.u,
                     r: cell.l,
                     l: cell.r,
+                    b: cell.b,
+                    t: cell.t,
                 };
             case 'LEFT':
                 X = sizeX - y - 1;
@@ -986,6 +1114,8 @@ function rotateHouse(house, orientation) {
                     d: cell.l,
                     r: cell.d,
                     l: cell.u,
+                    b: cell.b,
+                    t: cell.t,
                 };
             case 'RIGHT':
                 X = y;
@@ -996,6 +1126,8 @@ function rotateHouse(house, orientation) {
                     d: cell.r,
                     r: cell.u,
                     l: cell.d,
+                    b: cell.b,
+                    t: cell.t,
                 };
             case 'UP':
                 return maze[x][y];
@@ -1005,7 +1137,7 @@ function rotateHouse(house, orientation) {
     for (let x = 0; x < sizeX; x++) {
         const newMazeX = newMaze[x] = new Array(sizeY);
         for (let y = 0; y < sizeY; y++) {
-            newMazeX[y] = getCell(x, y);
+            newMazeX[y] = getCell(x, y, 0);
         }
     }
 
