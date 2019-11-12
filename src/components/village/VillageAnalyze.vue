@@ -4,7 +4,7 @@
 >
     <template v-if="hasResult">
         <header v-if="!simpleDisplay">
-            Village Analysis
+            {{villageName}} Analysis
         </header>
         <div v-show="isResolvable" class="information difficulty">
             <meter
@@ -129,6 +129,7 @@ export default {
         return {
             weight: {},
             showWeight: false,
+            villageName: configuration.cubeName,
         };
     },
     computed: {

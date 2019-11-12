@@ -8,8 +8,6 @@
 
 ## Legends
 
-* I. See how to put online 2 different version
-* II. Rename Village → Cube / House → level
 * II. Possibility to configure cube size
 * II. possibility to configure level size
 * II. Save size in store

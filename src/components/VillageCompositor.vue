@@ -197,7 +197,7 @@
                 </button>
                 <button
                     v-show="!!selectedResult.houseId"
-                    title="Save this result as a &quot;Village&quot;"
+                    :title="`Save this result as a &quot;${villageName}&quot;`"
                     @click="save"
                 >
                     <Icon icon="save" />
@@ -324,6 +324,8 @@ export default {
 
             selectedResult: {},
             selectedGroup: -1,
+
+            villageName: configuration.cubeName,
         };
     },
     computed: {

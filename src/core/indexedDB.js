@@ -1,9 +1,11 @@
+import configuration from '@/configuration';
+
 const store = {};
 
 (function() {
 
 const dbVersion = 2;
-const dbName = 'cubeMaze';
+const dbName = configuration.dbName;
 const tables = [{
     name: 'village',
     keyPath: 'name',

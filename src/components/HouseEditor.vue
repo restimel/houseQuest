@@ -5,7 +5,7 @@
     </header>
     <input
         v-show="houseList.length > 0"
-        placeholder="Choose the house"
+        :placeholder="`Choose the ${houseName}`"
         list="houseList"
         :value="selection"
         @change="load($event.currentTarget.value)"
@@ -42,7 +42,7 @@
             Save
         </button>
         <AskDialog
-            title="Save house"
+            :title="`Save ${houseName}`"
             :show="askDialog"
             @close="askDialog=false"
             @confirm="checkSave"
@@ -50,26 +50,26 @@
             <div>
                 <input
                     :class="{dialogFieldError: !house.name}"
-                    placeholder="Name of the house"
+                    :placeholder="`Name of the ${houseName}`"
                     v-model="house.name"
                     @keyup.prevent.stop.enter="checkSave"
                 >
                 <div v-show="isNameUsed"
                     class="dialogWarn"
                 >
-                    House will be overwritten
+                    {{houseName}} will be overwritten
                 </div>
             </div>
         </AskDialog>
         <AskDialog
-            title="Delete house"
+            :title="`Delete ${houseName}`"
             :show="askDialogRemove"
             saveButton="Delete"
             @close="askDialogRemove=false"
             @confirm="remove"
         >
             <div>
-                Do you want to delete house "{{title}}"?
+                Do you want to delete {{houseName}} "{{title}}"?
             </div>
         </AskDialog>
     </div>
@@ -81,6 +81,7 @@ import store from '@/core/indexedDB';
 import House from '@/models/house';
 import HouseView from '@/components/house/SvgHouse';
 import AskDialog from '@/components/AskDialog';
+import configuration from '@/configuration';
 
 export default {
     name: 'HouseEditor',
@@ -93,6 +94,7 @@ export default {
             selection: '',
             askDialog: false,
             askDialogRemove: false,
+            houseName: configuration.plateName,
         };
     },
     computed: {

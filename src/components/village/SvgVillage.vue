@@ -6,7 +6,7 @@
             @click="switchDisplay('info')"
         >
             <Icon :icon="['fas', isDetailed ? 'eye' : 'eye-slash']" />
-            House name
+            {{houseName.firstUpper()}} name
         </span>
         <span v-if="canChangePath"
             class="interactive-area switch-display"
@@ -20,7 +20,7 @@
             @click="switchDisplay('limitation')"
         >
             <Icon :icon="['fas', isLimitation ? 'eye' : 'eye-slash']" />
-            {{currentDisplay.limitation ? 'houe limitation' : 'house cells'}}
+            {{currentDisplay.limitation ? `${houseName} limitation` : `${houseName} cells`}}
         </span>
     </div>
     <svg width="98%" height="98%" :viewBox="[-size, -size, svgWidth, svgHeight].join(' ')">
@@ -288,6 +288,7 @@ export default {
             renderId: 0,
             currentDisplay: Object.assign({}, this.display),
             mouseCell: {},
+            houseName: configuration.plateName,
         };
     },
     created: function() {

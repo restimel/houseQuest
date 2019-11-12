@@ -8,6 +8,11 @@ import init from './initialization';
 
 Vue.config.productionTip = false;
 
+String.prototype.firstUpper = function() {
+    const firstLetter = this[0].toUpperCase();
+    return firstLetter + this.slice(1);
+};
+
 /* eslint-disable no-new */
 new Vue({
     el: '#app',

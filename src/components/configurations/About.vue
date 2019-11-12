@@ -1,6 +1,6 @@
 <template>
     <section>
-        <header><h1>About houseQuest</h1></header>
+        <header><h1>About {{title}}</h1></header>
         <ul>
             <li v-for="item of list" :key="item.name"
                 @click="egg(item.name)"
@@ -44,6 +44,7 @@ export default {
                 value: '08/05/2018 → 20/05/2018',
             }],
             added: false,
+            title: configuration.titleName,
         };
     },
     computed: {

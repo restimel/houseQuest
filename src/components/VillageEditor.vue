@@ -5,7 +5,7 @@
     </header>
     <input
         v-show="villageList.length > 0"
-        placeholder="Choose the village"
+        :placeholder="`Choose the ${villageName}`"
         list="villageList"
         :value="selection"
         @change="load($event.currentTarget.value)"
@@ -83,7 +83,7 @@
             Save
         </button>
         <AskDialog
-            title="Save village"
+            :title="`Save ${villageName}`"
             :show="askDialog"
             @close="askDialog=false"
             @confirm="checkSave"
@@ -91,26 +91,26 @@
             <div>
                 <input
                     :class="{dialogFieldError: !village.name}"
-                    placeholder="Name of the village"
+                    :placeholder="`Name of the ${villageName}`"
                     v-model="village.name"
                     @keyup.prevent.stop.enter="checkSave"
                 >
                 <div v-show="isNameUsed"
                     class="dialogWarn"
                 >
-                    House will be overwritten
+                    {{houseName}} will be overwritten
                 </div>
             </div>
         </AskDialog>
         <AskDialog
-            title="Delete village"
+            :title="`Delete ${villageName}`"
             :show="askDialogRemove"
             saveButton="Delete"
             @close="askDialogRemove=false"
             @confirm="remove"
         >
             <div>
-                Do you want to delete village "{{title}}"?
+                Do you want to delete {{villageName}} "{{title}}"?
             </div>
         </AskDialog>
     </div>
@@ -125,6 +125,7 @@ import VillageView from '@/components/village/SvgVillage';
 import HouseAction from '@/components/village/HouseAction';
 import VillageAnalyze from '@/components/village/VillageAnalyze';
 import AskDialog from '@/components/AskDialog';
+import configuration from '@/configuration';
 
 const orientations = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
 
@@ -134,6 +135,8 @@ export default {
         this.refresh().then(() => this.load(this.villageList[0], true));
 
         return {
+            villageName: configuration.cubeName,
+            houseName: configuration.plateName,
             village: new Village({propsData: {synchronized: true}}),
             villageList: [],
             selection: '',
@@ -171,7 +174,7 @@ export default {
                     break;
                 case 'houseSelector':
                 default:
-                    message = ['Click on a house area to select it.'];
+                    message = [`Click on a ${this.houseName} area to select it.`];
                     break;
             }
 

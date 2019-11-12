@@ -3,7 +3,7 @@
     <div class="defaultInfo">
         <header>Default status</header>
         <label class="label-info">
-            <span class="label-title">Houses</span>:
+            <span class="label-title">{{houseName.firstUpper()}}s</span>:
             <output>{{defaultHouses}}</output>
         </label>
         <label class="label-info">
@@ -28,6 +28,7 @@
 import store from '@/core/indexedDB';
 import Village from '@/models/village';
 import conf from '@/models/configurations';
+import configuration from '@/configuration';
 
 const arrows = {
     'UP': '↑',
@@ -54,6 +55,7 @@ export default {
         return {
             conf: conf,
             houseList: this.list || [],
+            houseName: configuration.plateName,
         };
     },
     computed: {
@@ -66,7 +68,7 @@ export default {
             const houseListLength = this.houseListLength;
 
             if (length === 0 || length === houseListLength) {
-                return `All (${houseListLength} houses)`;
+                return `All (${houseListLength} ${this.houseName}s)`;
             }
 
             return houses.join(', ');
