@@ -63,6 +63,9 @@ const Village = Vue.component('Village', {
             disablingOutsideCells: [],
             listStart: this.starts.slice(),
             listEnd: this.ends.slice(),
+            sizeX: confVillage.sizeX,
+            sizeY: confVillage.sizeY,
+            sizeZ: confVillage.sizeZ,
         };
     },
     computed: {
@@ -108,6 +111,18 @@ const Village = Vue.component('Village', {
                 ends: confVillage.ends,
             }, village);
 
+
+            if (village.size) {
+                const sizes = village.size.split('×');
+                this.sizeX = +sizes[0];
+                this.sizeY = +sizes[1];
+                this.sizeZ = +sizes[2];
+            } else {
+                this.sizeX = confVillage.sizeX;
+                this.sizeY = confVillage.sizeY;
+                this.sizeZ = confVillage.sizeZ;
+            }
+
             this.name = village.name;
             this.houses = village.houses;
             this.infos = this._initInfos(village.infos);
@@ -136,6 +151,7 @@ const Village = Vue.component('Village', {
                 createDate: this.createDate,
                 starts: this.listStart,
                 ends: this.listEnd,
+                size: `${this.sizeX}×${this.sizeY}×${this.sizeZ}`,
             });
 
             p.then(() => this.sync());
@@ -163,7 +179,7 @@ const Village = Vue.component('Village', {
                 this.defaultInfo = this._getInitInfo({}, true);
             }
 
-            const length = confVillage.sizeX * confVillage.sizeY * confVillage.sizeZ;
+            const length = this.sizeX * this.sizeY * this.sizeZ;
             for (let x = 0; x < length; x++) {
                 this.houses.push('_empty_§UP');
             }
@@ -198,7 +214,7 @@ const Village = Vue.component('Village', {
             }, obj);
         },
         _initInfos: function(initValue = []) {
-            const length = confVillage.sizeX * confVillage.sizeY;
+            const length = this.sizeX * this.sizeY;
             const infos = this.infos || new Array(length);
 
             for (let x = 0; x < length; x++) {
@@ -208,9 +224,9 @@ const Village = Vue.component('Village', {
             return infos;
         },
         _initMaze: function() {
-            const xLength = confVillage.sizeX * confHouse.sizeX;
-            const yLength = confVillage.sizeY * confHouse.sizeY;
-            const zLength = confVillage.sizeZ;
+            const xLength = this.sizeX * confHouse.sizeX;
+            const yLength = this.sizeY * confHouse.sizeY;
+            const zLength = this.sizeZ;
 
             const maze = new Array(xLength);
             for (let x = 0; x < xLength; x++) {
@@ -280,9 +296,9 @@ const Village = Vue.component('Village', {
         },
         houses: async function() {
             const houses = this.houses;
-            const confVillageSizeX = confVillage.sizeX;
-            const confVillageSizeY = confVillage.sizeY;
-            const confVillageSizeZ = confVillage.sizeZ;
+            const confVillageSizeX = this.sizeX;
+            const confVillageSizeY = this.sizeY;
+            const confVillageSizeZ = this.sizeZ;
             const houseMaze = new Array(confVillageSizeX);
             const promises = [];
 
