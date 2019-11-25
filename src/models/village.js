@@ -52,11 +52,15 @@ const Village = Vue.component('Village', {
         this.updateDate = 0;
         this.createDate = 0;
 
+        this.$nextTick(() => {
+            this.infos = this._initInfos();
+        });
+
         return {
             name: '',
             maze: this.initMaze || [],
             houses: [],
-            infos: this._initInfos(),
+            infos: [],
             defaultInfo: this._getInitInfo({}, true),
             analyzeResult: {},
             conf: conf,

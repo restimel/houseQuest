@@ -182,8 +182,8 @@ export default {
         },
     },
     methods: {
-        load: async function(name, asDefault) {
-            return this.village.get(name || '', asDefault);
+        load: async function(name = '', asDefault = false) {
+            return this.village.get(name, asDefault);
         },
         refresh: async function() {
             const list = await store.village.getAll();
