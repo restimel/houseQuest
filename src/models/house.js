@@ -19,6 +19,8 @@ const House = Vue.component('House', {
             updateDate: 0,
             createDate: 0,
             orientation: 'UP',
+            sizeX: confHouse.sizeX,
+            sizeY: confHouse.sizeY,
             conf: conf,
         };
     },
@@ -60,12 +62,22 @@ const House = Vue.component('House', {
                     maze: [],
                     updateDate: 0,
                     createDate: 0,
+                    size: `${confHouse.sizeX}×${confHouse.sizeY}`,
                 }
             }
+
             this.name = house.name;
             this.maze = house.maze;
             this.updateDate = house.updateDate;
             this.createDate = house.createDate;
+            if (house.size) {
+                const sizes = house.size.split('×');
+                this.sizeX = +sizes[0];
+                this.sizeY = +sizes[1];
+            } else {
+                this.sizeX = house.maze.length;
+                this.sizeY = this.sizeX && house.maze[0].length;
+            }
 
             if (!asDefault) {
                 this.sync();
@@ -79,6 +91,7 @@ const House = Vue.component('House', {
                 maze: this.maze,
                 updateDate: this.updateDate,
                 createDate: this.createDate,
+                size: `${this.sizeX}×${this.sizeY}`,
             });
 
             p.then(() => this.sync());
@@ -125,11 +138,11 @@ const House = Vue.component('House', {
         _orientationXY: function (x, y, orientation = this.orientation) {
             switch(orientation) {
                 case 'DOWN':
-                    return [confHouse.sizeX - x - 1, confHouse.sizeY - y - 1];
+                    return [this.sizeX - x - 1, this.sizeY - y - 1];
                 case 'LEFT':
-                    return [confHouse.sizeX - y - 1, x];
+                    return [this.sizeX - y - 1, x];
                 case 'RIGHT':
-                    return [y, confHouse.sizeY - x - 1];
+                    return [y, this.sizeY - x - 1];
                 case 'UP':
                 default:
                     return [x, y];

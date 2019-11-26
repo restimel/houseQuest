@@ -1,12 +1,14 @@
 import Vue from 'vue';
 import store from '@/core/indexedDB';
+import config from '@/configuration.js';
 
 const Configuration = Vue.component('Configuration', {
     data: function() {
         this.toWatch = [
             'theme', 'villageName', 'houseName', 'timeByMaze',
             'defaultInfo', 'infos', 'resultLimitation',
-            'CSVseparator', 'CSVcolumns', 'groupThreshold'
+            'CSVseparator', 'CSVcolumns', 'groupThreshold',
+            'village', 'house',
         ];
 
         return {
@@ -20,6 +22,8 @@ const Configuration = Vue.component('Configuration', {
             CSVseparator: ',',
             CSVcolumns: ['result.difficultyPercent', 'houses'],
             groupThreshold: 80,
+            village: config.village,
+            house: config.house,
 
             isLoaded: store.configuration.getAll().then(this.load.bind(this)),
         };
@@ -40,6 +44,15 @@ const Configuration = Vue.component('Configuration', {
                 type: attribute,
                 data: this[attribute],
             });
+        },
+    },
+    watch: {
+        village() {
+            config.village = this.village;
+        },
+
+        house() {
+            config.house = this.house;
         },
     },
 });

@@ -8,9 +8,8 @@
 
 ## Legends
 
-* II. Possibility to configure cube size
-* II. possibility to configure level size
-* II. Save size in store
+* II. Filter level depending on size
+* II. Filter cube depending on size
 * II. compute nb of change level
 * II.v allow to highlight position after movement
 * III. export level/village

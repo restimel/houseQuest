@@ -9,6 +9,9 @@
     <router-link to="composition" class="link">
         Composition
     </router-link>
+    <router-link to="importExport" class="link">
+        Import / Export
+    </router-link>
     <router-link to="about" class="link">
         About
     </router-link>
