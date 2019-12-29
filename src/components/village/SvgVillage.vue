@@ -113,11 +113,11 @@
                         :key="'resultCell-'+idx+'-'+idy+'/'+zIdx"
                     >
                         <use href="#arrow"
-                            v-if="cell[zIdx].orientation"
+                            v-if="cell[zIdx].dirEnd"
                             :class="result.shortestPath.has(idx+', '+idy+ ', '+zIdx) ? 'solution' : 'notSolution'"
                             x="0"
                             y="0"
-                            :transform="transformXYArrow(idx, idy, cell[zIdx].orientation)"
+                            :transform="transformXYArrow(idx, idy, cell[zIdx].dirEnd)"
                         />
                     </g>
                 </g>
