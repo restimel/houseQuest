@@ -168,6 +168,9 @@ const analyzeHlp = {
     getId: function getId(x, y, z) {
         return `${x}, ${y}, ${z}`;
     },
+    isInside: function isInside(ctx, x, y, z) {
+        return x >= 0 && x < ctx.mazeW && y >= 0 && y < ctx.mazeH && z >= 0 && z < ctx.mazeD;
+    },
     getCell: function getCell({ maze, outsideMaze }, x, y, z, defaultCell = wallCell) {
         return maze[x] && maze[x][y] && maze[x][y][z] || outsideMaze.get(analyzeHlp.getId(x, y, z)) || defaultCell;
     },
@@ -192,6 +195,88 @@ const analyzeHlp = {
         const directionCell = analyzeHlp.getCell(ctx, nX, nY, nZ);
 
         return [nX, nY, nZ, currentCell[direction] && directionCell[oppDirection]];
+    },
+    addOutside: function addOutside(ctx, kind, defaultDist) {
+        kind.forEach(([x, y, z], id) => {
+            let mazeCell, cell;
+            let isInside = false;
+
+            if (analyzeHlp.isInside(ctx, x, y, z)) {
+                // cell inside maze
+                isInside = true;
+                mazeCell = ctx.maze[x][y][z];
+                cell = analyzeHlp.getInfo(ctx, x, y, z);
+                cell.dist = defaultDist;
+            } else {
+                mazeCell = Object.assign({}, wallCell);
+                cell = {
+                    dist: defaultDist,
+                    dirEnd: '',
+                    parentStart: null,
+                    dirStart: '',
+                };
+            }
+            let idNghb, passage;
+
+            idNghb = analyzeHlp.getId(x + 1, y, z);
+            passage =  analyzeHlp.getCell(ctx, x + 1, y, z).l;
+            if (kind.has(idNghb) || passage) {
+                mazeCell.r = true;
+                if (!isInside && (analyzeHlp.isInside(ctx, x + 1, y, z) || !cell.dirEnd)) {
+                    cell.dirEnd = 'r';
+                }
+            }
+
+            idNghb = analyzeHlp.getId(x - 1, y, z);
+            passage =  analyzeHlp.getCell(ctx, x - 1, y, z).r;
+            if (kind.has(idNghb) || passage) {
+                mazeCell.l = true;
+                if (!isInside && (analyzeHlp.isInside(ctx, x - 1, y, z) || !cell.dirEnd)) {
+                    cell.dirEnd = 'l';
+                }
+            }
+
+            idNghb = analyzeHlp.getId(x, y + 1, z);
+            passage =  analyzeHlp.getCell(ctx, x, y + 1, z).u;
+            if (kind.has(idNghb) || passage) {
+                mazeCell.d = true;
+                if (!isInside && (analyzeHlp.isInside(ctx, x, y + 1, z) || !cell.dirEnd)) {
+                    cell.dirEnd = 'd';
+                }
+            }
+
+            idNghb = analyzeHlp.getId(x, y - 1, z);
+            passage =  analyzeHlp.getCell(ctx, x, y - 1, z).d;
+            if (kind.has(idNghb) || passage) {
+                mazeCell.u = true;
+                if (!isInside && (analyzeHlp.isInside(ctx, x, y - 1, z) || !cell.dirEnd)) {
+                    cell.dirEnd = 'u';
+                }
+            }
+
+            idNghb = analyzeHlp.getId(x, y, z + 1);
+            passage =  analyzeHlp.getCell(ctx, x, y, z + 1).t;
+            if (kind.has(idNghb) || passage) {
+                mazeCell.b = true;
+                if (!isInside && (analyzeHlp.isInside(ctx, x, y, z + 1) || !cell.dirEnd)) {
+                    cell.dirEnd = 'b';
+                }
+            }
+
+            idNghb = analyzeHlp.getId(x, y, z - 1);
+            passage =  analyzeHlp.getCell(ctx, x, y, z - 1).b;
+            if (kind.has(idNghb) || passage) {
+                mazeCell.t = true;
+                if (!isInside && (analyzeHlp.isInside(ctx, x, y, z - 1) || !cell.dirEnd)) {
+                    cell.dirEnd = 't';
+                }
+            }
+
+            if (!isInside) {
+                ctx.outsideMaze.set(id, mazeCell);
+                ctx.outsideCells.set(id, cell);
+            }
+        });
     },
     computeCell: function computeCell(ctx, x, y, z, dist, parentStart, dir) {
         const { accessible } = ctx;
@@ -426,18 +511,14 @@ const analyzeHlp = {
         const finalDir = new Array(3);
         const hard = (+normal + +opposite + +reverse) - 1;
 
-        // const normal = isComplex || !isOpposite && !isReverse;
-        // const opposite = isComplex || isOpposite;
-        // const reverse = isComplex || isReverse;
-
-        const normalDir = convertPosition[info.dirEnd];
+        const normalDir = convertPosition[info.dirEnd] || 'l';
         let numDirection = getNumDirection[normalDir];
-
 
         // follow the natural way
         if (normal) {
-            nposition[numDirection] = normalDir;
-            finalDir[numDirection] = normalDir;
+            const dir = revertDirection(nposition[numDirection]);
+            nposition[numDirection] = dir;
+            finalDir[numDirection] = dir;
         }
 
         if (opposite) {
@@ -454,29 +535,12 @@ const analyzeHlp = {
             finalDir[numDirection] = dir;
         }
 
-
-        // if (isComplex || isOpposite) {
-        //     numDirection = (numDirection + 1) % 2;
-        //     nposition[numDirection] = revertDirection(nposition[numDirection]);
-        //     if (isComplex) {
-        //         dir = nposition.slice(0, 2).join('');
-        //     } else {
-        //         dir = nposition[numDirection];
-        //     }
-        // }
-
         let [X, Y, Z, c] = analyzeHlp.move(ctx, x, y, z, nposition, numDirection);
         c = (c > 1 ? c - 1 : 0);
         return [X, Y, Z, c, hard, nposition, finalDir.join(''), analyzeHlp.getId(X, Y, Z)];
     },
-    // computeMovements,
-};
-
-function analyze({maze, starts, ends}) {
-    const z = 0;
-    const { getId, getCell, computeDirections, computeOneMovement } = analyzeHlp;
-
-    function computeMovements(x, y, z) {
+    computeMovements: function computeMovements(ctx, x, y, z) {
+        const { getCell, getId, computeOneMovement } = analyzeHlp;
         function buildState([x, y, z, complex, hard, position, mvt, id], cost) {
             return {
                 id: id + '-' + position.join(','),
@@ -494,23 +558,30 @@ function analyze({maze, starts, ends}) {
 
         const cell = getCell(ctx, x, y, z);
         let position = [
-            cell.d ? 'u' : 'd',
-            cell.l ? 'r' : 'l',
-            cell.b ? 't' : 'b',
+            cell.d && y > 0 ? 'u' : 'd',
+            cell.l && x > 0 ? 'r' : 'l',
+            cell.b && z < ctx.mazeD - 1 ? 't' : 'b',
         ];
         const initValues = [buildState([x, y, z, 0, 0, position, '', getId(x, y, z)], 0)];
-        const checkEnd = (value) => endCells.has(value.cid);
+        const checkEnd = (value) => ctx.endCells.has(value.cid);
         const computeNext = (value) => {
-            const {x, y, z, position} = value;
+            const { x, y, z, position } = value;
             const mvtNormal = computeOneMovement(ctx, x, y, z, position, { normal: true, opposite: false, reverse: false });
             const mvtOpposite = computeOneMovement(ctx, x, y, z, position, { normal: false, opposite: true, reverse: false });
             const mvtComplex = computeOneMovement(ctx, x, y, z, position, { normal: true, opposite: true, reverse: false });
-            //TODO deep movement
+            const mvtReverse = computeOneMovement(ctx, x, y, z, position, { normal: false, opposite: false, reverse: true });
+            const mvtCplxReverse1 = computeOneMovement(ctx, x, y, z, position, { normal: true, opposite: false, reverse: true });
+            const mvtCplxReverse2 = computeOneMovement(ctx, x, y, z, position, { normal: false, opposite: true, reverse: true });
+            const mvtAll = computeOneMovement(ctx, x, y, z, position, { normal: true, opposite: true, reverse: true });
 
             return [
                 buildState(mvtNormal, 1),
                 buildState(mvtOpposite, 1),
                 buildState(mvtComplex, 10),
+                buildState(mvtReverse, 3),
+                buildState(mvtCplxReverse1, 15),
+                buildState(mvtCplxReverse2, 15),
+                buildState(mvtAll, 25),
                 // magic
             ];
         };
@@ -520,76 +591,12 @@ function analyze({maze, starts, ends}) {
             checkEnd,
         })
         return result;
-    }
+    },
+};
 
-    function addOutside(kind, defaultDist) {
-        kind.forEach(([x, y, z], id) => {
-            let mazeCell, cell;
-            let isInside = false;
-
-            if (x >= 0 && x < ctx.mazeW && y >= 0 && y < ctx.mazeH && z >= 0 && z < ctx.mazeD) {
-                // cell inside maze
-                isInside = true;
-                mazeCell = ctx.maze[x][y][z];
-                cell = analyzeHlp.getInfo(ctx, x, y, z);
-            } else {
-                mazeCell = Object.assign({}, wallCell);
-                cell = {
-                    dist: defaultDist,
-                    dirEnd: '',
-                    parentStart: null,
-                    dirStart: '',
-                };
-            }
-
-            if (kind.has(analyzeHlp.getId(x + 1, y, z))) {
-                mazeCell.r = true;
-            } else if (analyzeHlp.getCell(ctx, x + 1, y, z).l) {
-                mazeCell.r = true;
-                cell.dirEnd = 'r';
-            }
-
-            if (kind.has(analyzeHlp.getId(x - 1, y, z))) {
-                mazeCell.l = true;
-            } else if (analyzeHlp.getCell(ctx, x - 1, y, z).r) {
-                mazeCell.l = true;
-                cell.dirEnd = 'l';
-            }
-
-            if (kind.has(analyzeHlp.getId(x, y + 1, z))) {
-                mazeCell.d = true;
-            } else if (analyzeHlp.getCell(ctx, x, y + 1, z).u) {
-                mazeCell.d = true;
-                cell.dirEnd = 'd';
-            }
-
-            if (kind.has(analyzeHlp.getId(x, y - 1, z))) {
-                mazeCell.u = true;
-            } else if (analyzeHlp.getCell(ctx, x, y - 1, z).d) {
-                mazeCell.u = true;
-                cell.dirEnd = 'u';
-            }
-
-            // if (kind.has(getId(x, y, z + 1))) {
-            //     mazeCell.b = false;
-            // } else if (getCell(ctx, x, y, z + 1).t) {
-            //     mazeCell.b = false;
-            //     cell.dirEnd = 'b';
-            // }
-
-            // if (kind.has(getId(x, y, z - 1))) {
-            //     mazeCell.t = false;
-            // } else if (getCell(ctx, x, y, z - 1).b) {
-            //     mazeCell.t = false;
-            //     cell.dirEnd = 't';
-            // }
-
-            if (!isInside) {
-                ctx.outsideMaze.set(id, mazeCell);
-                ctx.outsideCells.set(id, cell);
-            }
-        });
-    }
+function analyze({maze, starts, ends}) {
+    const z = 0;
+    const { computeDirections, computeMovements } = analyzeHlp;
 
     const mazeW = maze.length;
     const mazeH = mazeW && maze[0].length;
@@ -631,8 +638,8 @@ function analyze({maze, starts, ends}) {
     };
 
     /* Add start and end cells */
-    addOutside(startCells, 0);
-    addOutside(endCells, Infinity);
+    analyzeHlp.addOutside(ctx, startCells, 0);
+    analyzeHlp.addOutside(ctx, endCells, Infinity);
 
     /* compute distance and set available cells */
     analyzeHlp.computeDistance(ctx);
@@ -647,7 +654,7 @@ function analyze({maze, starts, ends}) {
     if (isFinite(shortestPathLength)) {
         startCells.forEach(([x, y, z], id) => {
             if (ctx.shortestPath.has(id)) {
-                [movements, complexMovements, hardMovements] = computeMovements(x, y, z);
+                [movements, complexMovements, hardMovements] = analyzeHlp.computeMovements(ctx, x, y, z);
             }
         });
     }
@@ -675,11 +682,11 @@ function Astar({
     const done = new Map();
     let result;
     let todo = initValues.map(v => ({
-        v: v,
-        id: v.id,
-        d: 0,
-        dh: v.cost,
-        parent: null,
+        v: v, // node
+        id: v.id, // identifier
+        d: 0, // real distance
+        dh: v.cost, // heuristic distance
+        parent: null, // id of parent node
     }));
 
     function sortValues(v1, v2) {

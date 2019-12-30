@@ -103,15 +103,34 @@ mazeLvl05[0][1].t = true;
 mazeLvl05[0][2].r = false;
 mazeLvl05[1][2].l = false;
 
+/**______
+ * | | | |
+ * |_   _|
+ * |_____|
+ */
+const mazeLvl06 = Analyzer._initMaze(3, 3);
+mazeLvl06[0][0].r = false;
+mazeLvl06[1][0].l = false;
+mazeLvl06[1][0].r = false;
+mazeLvl06[2][0].l = false;
+mazeLvl06[0][1].d = false;
+mazeLvl06[2][1].d = false;
+mazeLvl06[0][2].u = false;
+mazeLvl06[2][2].u = false;
 
-const maze = mazeLvl01.map((row, x) => row.map((cell, y) => [
-    cell,
-    mazeLvl02[x][y],
-    mazeLvl03[x][y],
-    mazeLvl04[x][y],
-    mazeLvl05[x][y],
-]));
-const mazeD = 5;
+function buildMaze() {
+    return mazeLvl01.map((row, x) => row.map((cell, y) => [
+        cell,
+        mazeLvl02[x][y],
+        mazeLvl03[x][y],
+        mazeLvl04[x][y],
+        mazeLvl05[x][y],
+        mazeLvl06[x][y],
+    ]));
+}
+const mazeD = 6;
+
+let maze = buildMaze();
 
 function __buildCells() {
     const cells = maze.map((row, x) => row.map((col, y) => col.map((cell, z) => {
@@ -188,6 +207,24 @@ describe('villageAnalyzer', () => {
             it('should return cell position id', () => {
                 expect(getId(2, 4, 4567)).toBe('2, 4, 4567');
                 expect(getId(0, 56, 1)).toBe('0, 56, 1');
+            });
+        });
+
+        describe('isInside', () => {
+            const isInside = fct.isInside;
+            const ctx = __buildCtx();
+
+            it('should return true if it is inside maze', () => {
+                expect(isInside(ctx, 2, 1, 2)).toBe(true);
+                expect(isInside(ctx, 0, 0, 0)).toBe(true);
+                expect(isInside(ctx, 2, 2, mazeD -1)).toBe(true);
+                expect(isInside(ctx, -1, 0, 0)).toBe(false);
+                expect(isInside(ctx, 0, -1, 0)).toBe(false);
+                expect(isInside(ctx, 0, 0, -1)).toBe(false);
+                expect(isInside(ctx, 3, 0, 0)).toBe(false);
+                expect(isInside(ctx, 0, 3, 0)).toBe(false);
+                expect(isInside(ctx, 0, 0, mazeD)).toBe(false);
+                expect(isInside(ctx, 3, 3, mazeD)).toBe(false);
             });
         });
 
@@ -500,6 +537,425 @@ describe('villageAnalyzer', () => {
                 expect(rslt10[3]).toBe(false);
                 expect(rslt11[3]).toBe(false);
                 expect(rslt12[3]).toBe(false);
+            });
+        });
+
+        describe('addOutside', () => {
+            const addOutside = fct.addOutside;
+            let ctx = __buildCtx();
+
+            beforeEach(() => {
+                ctx = __buildCtx();
+            });
+
+            afterEach(() => {
+                maze = buildMaze();
+            });
+
+            it('should add outside cells', () => {
+                const list = new Map();
+                list.set('-1, 0, 1', [-1, 0, 1]);
+                list.set('1, -1, 0', [1, -1, 0]);
+                list.set('2, 2, -1', [2, 2, -1]);
+                list.set('3, 0, 0', [3, 0, 0]);
+                list.set('0, 3, 0', [0, 3, 0]);
+                list.set('0, 0, ' + mazeD, [0, 0, mazeD]);
+
+                addOutside(ctx, list, 0);
+
+                expect(ctx.outsideMaze.has('-1, 0, 1')).toBe(true);
+                expect(ctx.outsideCells.has('-1, 0, 1')).toBe(true);
+
+                expect(ctx.outsideMaze.has('1, -1, 0')).toBe(true);
+                expect(ctx.outsideCells.has('1, -1, 0')).toBe(true);
+
+                expect(ctx.outsideMaze.has('2, 2, -1')).toBe(true);
+                expect(ctx.outsideCells.has('2, 2, -1')).toBe(true);
+
+                expect(ctx.outsideMaze.has('3, 0, 0')).toBe(true);
+                expect(ctx.outsideCells.has('3, 0, 0')).toBe(true);
+
+                expect(ctx.outsideMaze.has('0, 3, 0')).toBe(true);
+                expect(ctx.outsideCells.has('0, 3, 0')).toBe(true);
+
+                expect(ctx.outsideMaze.has('0, 0, ' + mazeD)).toBe(true);
+                expect(ctx.outsideCells.has('0, 0, ' + mazeD)).toBe(true);
+            });
+
+            it('should fill info of outside cells', () => {
+                const list = new Map();
+                const list2 = new Map();
+                fct.getCell(ctx, 0, 0, 0).t = true;
+                fct.getCell(ctx, 0, 0, mazeD -1).b = true;
+                list.set('-1, 0, 0', [-1, 0, 0]);
+                list2.set('0, -1, 0', [0, -1, 0]);
+                list.set('0, 0, -1', [0, 0, -1]);
+                list2.set('3, 0, 0', [3, 0, 0]);
+                list.set('0, 3, 0', [0, 3, 0]);
+                list2.set('0, 0, ' + mazeD, [0, 0, mazeD]);
+
+                list.set('1, 1, -1', [1, 1, -1]);
+
+                addOutside(ctx, list, 0);
+                addOutside(ctx, list2, 42);
+
+                expect(fct.getInfo(ctx, -1, 0, 0, false)).toEqual({
+                    dist: 0,
+                    dirEnd: 'r',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 0, -1, 0, false)).toEqual({
+                    dist: 42,
+                    dirEnd: 'd',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 0, 0, -1, false)).toEqual({
+                    dist: 0,
+                    dirEnd: 'b',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 3, 0, 0, false)).toEqual({
+                    dist: 42,
+                    dirEnd: 'l',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 0, 3, 0, false)).toEqual({
+                    dist: 0,
+                    dirEnd: 'u',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 0, 0, mazeD, false)).toEqual({
+                    dist: 42,
+                    dirEnd: 't',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 1, 1, -1, false)).toEqual({
+                    dist: 0,
+                    dirEnd: '',
+                    parentStart: null,
+                    dirStart: '',
+                });
+            });
+
+            it('should fill maze of outside cells', () => {
+                const list = new Map();
+                fct.getCell(ctx, 0, 0, 0).t = true;
+                fct.getCell(ctx, 0, 0, mazeD - 1).b = true;
+                list.set('-1, 0, 0', [-1, 0, 0]);
+                list.set('0, -1, 0', [0, -1, 0]);
+                list.set('0, 0, -1', [0, 0, -1]);
+                list.set('1, 1, -1', [1, 1, -1]);
+                list.set('3, 0, 0', [3, 0, 0]);
+                list.set('0, 3, 0', [0, 3, 0]);
+                list.set('0, 0, ' + mazeD, [0, 0, mazeD]);
+
+                addOutside(ctx, list, 0);
+
+                expect(fct.getCell(ctx, -1, 0, 0)).toEqual({
+                    u: false,
+                    d: false,
+                    l: false,
+                    r: true,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 0, -1, 0)).toEqual({
+                    u: false,
+                    d: true,
+                    l: false,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 0, 0, -1)).toEqual({
+                    u: false,
+                    d: false,
+                    l: false,
+                    r: false,
+                    b: true,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 1, 1, -1)).toEqual({
+                    u: false,
+                    d: false,
+                    l: false,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 3, 0, 0)).toEqual({
+                    u: false,
+                    d: false,
+                    l: true,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 0, 3, 0)).toEqual({
+                    u: true,
+                    d: false,
+                    l: false,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 0, 0, mazeD)).toEqual({
+                    u: false,
+                    d: false,
+                    l: false,
+                    r: false,
+                    b: false,
+                    t: true,
+                });
+            });
+
+            it('should not add inside cells', () => {
+                const list = new Map();
+                list.set('0, 0, 1', [0, 0, 1]);
+                list.set('1, 0, 0', [1, 0, 0]);
+                list.set('2, 2, 2', [2, 2, 2]);
+                list.set('1, 1, 3', [1, 1, 3]);
+
+                addOutside(ctx, list, 0);
+
+                expect(ctx.outsideMaze.has('0, 0, 1')).toBe(false);
+                expect(ctx.outsideCells.has('0, 0, 1')).toBe(false);
+
+                expect(ctx.outsideMaze.has('1, 0, 0')).toBe(false);
+                expect(ctx.outsideCells.has('1, 0, 0')).toBe(false);
+
+                expect(ctx.outsideMaze.has('2, 2, 2')).toBe(false);
+                expect(ctx.outsideCells.has('2, 2, 2')).toBe(false);
+
+                expect(ctx.outsideMaze.has('1, 1, 3')).toBe(false);
+                expect(ctx.outsideCells.has('1, 1, 3')).toBe(false);
+            });
+
+            it('should fill info of inside cells', () => {
+                const list = new Map();
+                const list2 = new Map();
+                list.set('0, 0, 1', [0, 0, 1]);
+                list2.set('1, 0, 0', [1, 0, 0]);
+                list.set('2, 2, 2', [2, 2, 2]);
+                list2.set('1, 1, 3', [1, 1, 3]);
+
+                addOutside(ctx, list, 10);
+                addOutside(ctx, list2, Infinity);
+
+                expect(fct.getInfo(ctx, 0, 0, 1, false)).toEqual({
+                    dist: 10,
+                    dirEnd: '',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 1, 0, 0, false)).toEqual({
+                    dist: Infinity,
+                    dirEnd: '',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 2, 2, 2, false)).toEqual({
+                    dist: 10,
+                    dirEnd: '',
+                    parentStart: null,
+                    dirStart: '',
+                });
+
+                expect(fct.getInfo(ctx, 1, 1, 3, false)).toEqual({
+                    dist: Infinity,
+                    dirEnd: '',
+                    parentStart: null,
+                    dirStart: '',
+                });
+            });
+
+            it('should not change maze with inside cells', () => {
+                const list = new Map();
+                list.set('0, 0, 1', [0, 0, 1]);
+                list.set('1, 0, 0', [1, 0, 0]);
+                list.set('2, 2, 2', [2, 2, 2]);
+                list.set('1, 1, 3', [1, 1, 3]);
+                list.set('0, 1, 3', [0, 1, 3]);
+                list.set('0, 1, 0', [0, 1, 0]);
+                list.set('1, 2, 3', [1, 2, 3]);
+                list.set('1, 0, 2', [1, 0, 2]);
+
+                addOutside(ctx, list, 0);
+
+                expect(fct.getCell(ctx, 0, 0, 1)).toEqual({
+                    u: true,
+                    d: true,
+                    l: true,
+                    r: true,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 1, 0, 0)).toEqual({
+                    u: true,
+                    d: true,
+                    l: true,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 2, 2, 2)).toEqual({
+                    u: true,
+                    d: true,
+                    l: true,
+                    r: true,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 1, 1, 3)).toEqual({
+                    u: true,
+                    d: true,
+                    l: true,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 0, 1, 3)).toEqual({
+                    u: true,
+                    d: true,
+                    l: true,
+                    r: true,
+                    b: true,
+                    t: true,
+                });
+
+                expect(fct.getCell(ctx, 0, 1, 0)).toEqual({
+                    u: false,
+                    d: false,
+                    l: true,
+                    r: true,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 1, 2, 3)).toEqual({
+                    u: true,
+                    d: true,
+                    l: false,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+
+                expect(fct.getCell(ctx, 1, 0, 2)).toEqual({
+                    u: true,
+                    d: false,
+                    l: true,
+                    r: true,
+                    b: false,
+                    t: false,
+                });
+            });
+
+            it('should manage contiguous outside cell', () => {
+                const list = new Map();
+                fct.getCell(ctx, 2, 2, 0).r = false;
+                list.set('-1, 0, 0', [-1, 0, 0]);
+                list.set('-1, 1, 0', [-1, 1, 0]);
+                list.set('2, 2, 0', [2, 2, 0]);
+                list.set('3, 2, 0', [3, 2, 0]);
+                list.set('3, 3, 0', [3, 3, 0]);
+
+                addOutside(ctx, list, 23);
+
+                expect(fct.getCell(ctx, -1, 0, 0)).toEqual({
+                    u: false,
+                    d: true,
+                    l: false,
+                    r: true,
+                    b: false,
+                    t: false,
+                });
+                expect(fct.getCell(ctx, -1, 1, 0)).toEqual({
+                    u: true,
+                    d: false,
+                    l: false,
+                    r: true,
+                    b: false,
+                    t: false,
+                });
+                expect(fct.getCell(ctx, 2, 2, 0)).toEqual({
+                    u: true,
+                    d: true,
+                    l: true,
+                    r: true,
+                    b: false,
+                    t: false,
+                });
+                expect(fct.getCell(ctx, 3, 2, 0)).toEqual({
+                    u: false,
+                    d: true,
+                    l: true,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+                expect(fct.getCell(ctx, 3, 3, 0)).toEqual({
+                    u: true,
+                    d: false,
+                    l: false,
+                    r: false,
+                    b: false,
+                    t: false,
+                });
+                expect(fct.getInfo(ctx, -1, 0, 0, false)).toEqual({
+                    dist: 23,
+                    dirEnd: 'r',
+                    parentStart: null,
+                    dirStart: '',
+                });
+                expect(fct.getInfo(ctx, -1, 1, 0, false)).toEqual({
+                    dist: 23,
+                    dirEnd: 'r',
+                    parentStart: null,
+                    dirStart: '',
+                });
+                expect(fct.getInfo(ctx, 2, 2, 0, false)).toEqual({
+                    dist: 23,
+                    dirEnd: '',
+                    parentStart: null,
+                    dirStart: '',
+                });
+                expect(fct.getInfo(ctx, 3, 2, 0, false)).toEqual({
+                    dist: 23,
+                    dirEnd: 'l',
+                    parentStart: null,
+                    dirStart: '',
+                });
+                expect(fct.getInfo(ctx, 3, 3, 0, false)).toEqual({
+                    dist: 23,
+                    dirEnd: 'u',
+                    parentStart: null,
+                    dirStart: '',
+                });
             });
         });
 
@@ -1136,14 +1592,155 @@ describe('villageAnalyzer', () => {
             });
         });
 
-        xdescribe('computeMovements', () => {
+        describe('computeMovements', () => {
             const computeMovements = fct.computeMovements;
-            const ctx = __buildCtx();
+            let ctx = __buildCtx();
             fct.computeDistance(ctx);
+
+            beforeEach(() => {
+                ctx = __buildCtx();
+            });
+
+            it('should works with simple movement', () => {
+                ctx.endCells = new Map([['1, 0, 0', [1, 0, 0]]]);
+                fct.computeDistance(ctx);
+
+                const [mvt, complexMvt, hardMvt] = computeMovements(ctx, 0, 0, 0);
+
+                expect(mvt).toEqual(['', 'u', 'r']);
+                expect(complexMvt).toBe(0);
+                expect(hardMvt).toBe(0);
+            });
+
+            it('should works for normal movemnts', () => {
+                fct.computeDistance(ctx);
+
+                const [mvt, complexMvt, hardMvt] = computeMovements(ctx, 0, 0, 0);
+
+                expect(mvt).toEqual(['', 'r', 'u', 'l', 'd', 'r', 't', 'u', 'd']);
+                expect(complexMvt).toBe(0);
+                expect(hardMvt).toBe(0);
+            });
+
+            it('should not throw if it is not possible', () => {
+                ctx.endCells = new Map([['1, 0, 2', [1, 0, 2]]]);
+                fct.computeDistance(ctx);
+
+                const [mvt, complexMvt, hardMvt] = computeMovements(ctx, 0, 0, 0);
+
+                expect(mvt).toEqual([]);
+                expect(complexMvt).toBe(0);
+                expect(hardMvt).toBe(0);
+            });
+
+            it('should works with more complex movements', () => {
+                ctx.startCells = new Map([['0, 2, 5', [0, 2, 5]]]);
+                ctx.endCells = new Map([['1, 0, 5', [1, 0, 5]]]);
+                fct.computeDistance(ctx);
+
+                const [mvt, complexMvt, hardMvt] = computeMovements(ctx, 0, 2, 5);
+
+                expect(mvt).toEqual(['', 'r', 'd', 'ul']);
+                expect(complexMvt).toBe(2);
+                expect(hardMvt).toBe(1);
+            });
+
+            xit('should work with several start', () => {
+                ctx.startCells = new Map([
+                    ['0, 2, 5', [0, 2, 5]],
+                    ['2, 2, 5', [2, 2, 5]],
+                    ['0, 0, 5', [0, 0, 5]],
+                ]);
+                ctx.endCells = new Map([['1, 0, 5', [1, 0, 5]]]);
+                fct.computeDistance(ctx);
+
+                const [mvt, complexMvt, hardMvt] = computeMovements(ctx);
+
+                expect(mvt).toEqual(['', 'd', 'ur']);
+                expect(complexMvt).toBe(0);
+                expect(hardMvt).toBe(1);
+            });
         });
 
-        xdescribe('addOutside', () => {
-            const addOutside = fct.addOutside;
+        it('should work with simple case', () => {
+            const rslt = Analyzer.analyze({
+                maze: buildMaze(),
+                starts: ['0, 0, 0'],
+                ends: ['2, 2, 1'],
+            });
+
+            expect(rslt.nbCellAccessible).toBe(42);
+            expect(rslt.nbShortestPath).toBe(13);
+            expect(rslt.shortestPath).toHaveLength(13);
+            expect(rslt.cells).toHaveLength(3);
+            expect(rslt.cells[0]).toHaveLength(3);
+            expect(rslt.cells[0][0]).toHaveLength(mazeD);
+            expect(rslt.cells[1][1][0]).toEqual({
+                dirEnd: 'd',
+                dirStart: 'u',
+                dist: 2,
+                parentStart: '1, 0, 0',
+            });
+            expect(rslt.accessible).toHaveLength(42);
+            expect(rslt.movements).toEqual(['', 'r', 'u', 'd', 'l', 'r', 't', 'u', 'd']);
+            expect(rslt.complexMovements).toBe(0);
+            expect(rslt.hardMovements).toBe(0);
+            expect(rslt.difficulty).toBe(0);
+            expect(rslt.difficultyPercent).toBe(0);
+        });
+
+        it('should work with simple case', () => {
+            const rslt = Analyzer.analyze({
+                maze: buildMaze(),
+                starts: ['0, 0, 0', '2, 2, 4'],
+                ends: ['2, 2, 1'],
+            });
+
+            expect(rslt.nbCellAccessible).toBe(42);
+            expect(rslt.nbShortestPath).toBe(11);
+            expect(rslt.shortestPath).toHaveLength(11);
+            expect(rslt.cells).toHaveLength(3);
+            expect(rslt.cells[0]).toHaveLength(3);
+            expect(rslt.cells[0][0]).toHaveLength(mazeD);
+            expect(rslt.cells[1][1][0]).toEqual({
+                dirEnd: 'u',
+                dirStart: 'u',
+                dist: 2,
+                parentStart: '1, 0, 0',
+            });
+            expect(rslt.accessible).toHaveLength(42);
+            expect(rslt.movements).toEqual(['', 'l', 't', 'd', 'r', 'u', 'd']);
+            expect(rslt.complexMovements).toBe(4);
+            expect(rslt.hardMovements).toBe(0);
+            expect(rslt.difficulty).toBe(0);
+            expect(rslt.difficultyPercent).toBe(0);
+        });
+
+        it('should work with hard case', () => {
+            const rslt = Analyzer.analyze({
+                maze: buildMaze(),
+                starts: ['-1, 0, 0', '2, 2, 5', '0, 2, 5'],
+                ends: ['0, 0, 2', '1, -1, 5'],
+            });
+
+            expect(rslt.nbCellAccessible).toBe(52);
+            expect(rslt.nbShortestPath).toBe(4);
+            expect(rslt.shortestPath).toHaveLength(4);
+            expect(rslt.cells).toHaveLength(3);
+            expect(rslt.cells[0]).toHaveLength(3);
+            expect(rslt.cells[0][0]).toHaveLength(mazeD);
+            expect(rslt.cells[1][1][0]).toEqual({
+                dirEnd: 'u',
+                dirStart: 'u',
+                dist: 3,
+                parentStart: '1, 0, 0',
+            });
+            expect(rslt.accessible).toHaveLength(52);
+            expect(rslt.movements).toEqual(['', 'l', 'd', 'ur']);
+            expect(rslt.complexMovements).toBe(2);
+            expect(rslt.hardMovements).toBe(1);
+            expect(rslt.difficulty).toBe(0);
+            expect(rslt.difficultyPercent).toBe(0);
         });
     });
 });
