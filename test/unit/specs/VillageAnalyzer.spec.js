@@ -136,9 +136,11 @@ function __buildCells() {
     const cells = maze.map((row, x) => row.map((col, y) => col.map((cell, z) => {
         return {
             dist: Infinity,
+            distEnd: Infinity,
             dirEnd: '',
-            parentStart: null,
             dirStart: '',
+            parentStart: null,
+            parentEnd: null,
         };
     })));
     return cells;
@@ -342,9 +344,11 @@ describe('villageAnalyzer', () => {
             const cells = maze.map((row, x) => row.map((col, y) => col.map((cell, z) => {
                 return {
                     dist: x + y + z,
-                    dirEnd: '',
+                    distEnd: 100 - (x + y + z),
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: '',
                 };
             })));
 
@@ -352,31 +356,39 @@ describe('villageAnalyzer', () => {
                 const outsideCells = new Map();
                 expect(getInfo({cells, outsideCells}, 0, 0, 0, false)).toEqual({
                     dist: 0,
+                    distEnd: 100 - 0,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(getInfo({ cells, outsideCells }, 1, 1, 1, false)).toEqual({
                     dist: 3,
+                    distEnd: 100 - 3,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(getInfo({ cells, outsideCells }, 1, 0, 2, false)).toEqual({
                     dist: 3,
+                    distEnd: 100 - 3,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 // outside
                 expect(getInfo({ cells, outsideCells }, 1, 3, 0, false)).toEqual({
                     dist: Infinity,
+                    distEnd: Infinity,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
             });
 
@@ -384,16 +396,20 @@ describe('villageAnalyzer', () => {
                 const outsideCells = new Map();
                 expect(getInfo({ cells, outsideCells }, 0, 0, 0, true)).toEqual({
                     dist: 0,
-                    dirEnd: '',
+                    distEnd: 100 - 0,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: '',
                 });
 
                 expect(getInfo({ cells, outsideCells }, 1, 2, 0, true)).toEqual({
                     dist: 3,
-                    dirEnd: '',
+                    distEnd: 100 - 3,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: '',
                 });
 
                 expect(getInfo({ cells, outsideCells }, 1, 3, 0, true)).toBeUndefined();
@@ -402,28 +418,36 @@ describe('villageAnalyzer', () => {
             it('should return information of outside cell', () => {
                 const outsideCells = new Map([['-1, 0, 0', {
                     dist: 42,
-                    dirEnd: 'u',
+                    distEnd: 100 - 42,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: 'u',
                 }], ['0, 0, 20', {
                     dist: 10,
-                    dirEnd: 'd',
+                    distEnd: 100 - 10,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: 'd',
                 }]]);
 
                 expect(getInfo({ cells, outsideCells }, -1, 0, 0, false)).toEqual({
                     dist: 42,
-                    dirEnd: 'u',
+                    distEnd: 100 - 42,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: 'u',
                 });
 
                 expect(getInfo({ cells, outsideCells }, 0, 0, 20, false)).toEqual({
                     dist: 10,
-                    dirEnd: 'd',
+                    distEnd: 100 - 10,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: 'd',
                 });
 
                 expect(getInfo({ cells, outsideCells }, 0, 0, 20, true)).toBeUndefined();
@@ -432,23 +456,30 @@ describe('villageAnalyzer', () => {
             it('should keep modification', () => {
                 const outsideCells = new Map([['-1, 0, 0', {
                     dist: 42,
-                    dirEnd: 'u',
+                    distEnd: 100 - 42,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: 'u',
                 }], ['0, 0, 20', {
                     dist: 10,
-                    dirEnd: 'd',
+                    distEnd: 100 - 10,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: 'd',
                 }]]);
 
                 const info1 = getInfo({ cells, outsideCells }, 1, 2, 0, true);
                 info1.dist = 33;
+                info1.distEnd = 333;
                 expect(getInfo({ cells, outsideCells }, 1, 2, 0, true)).toEqual({
                     dist: 33,
-                    dirEnd: '',
+                    distEnd: 333,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: '',
                 });
 
                 // method does not matter
@@ -456,30 +487,38 @@ describe('villageAnalyzer', () => {
                 info1bis.dirEnd = 'd';
                 expect(getInfo({ cells, outsideCells }, 2, 2, 0, false)).toEqual({
                     dist: 4,
-                    dirEnd: 'd',
+                    distEnd: 100 - 4,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: 'd',
                 });
 
                 const info2 = getInfo({ cells, outsideCells }, 0, 0, 20, false);
                 info2.dirEnd = 'r';
                 info2.dirStart = 'l';
                 info2.dist = 12;
+                info2.distEnd = 120;
                 expect(getInfo({ cells, outsideCells }, 0, 0, 20, false)).toEqual({
                     dist: 12,
-                    dirEnd: 'r',
+                    distEnd: 120,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: 'l',
+                    dirEnd: 'r',
                 });
 
                 const info3 = getInfo({ cells, outsideCells }, 3, 0, 0, false);
                 info3.dist = 42;
+                info3.distEnd = 2;
                 info3.dirEnd = 'r';
                 expect(getInfo({ cells, outsideCells }, 3, 0, 0, false)).toEqual({
                     dist: Infinity,
-                    dirEnd: '',
+                    distEnd: Infinity,
                     parentStart: null,
+                    parentEnd: null,
                     dirStart: '',
+                    dirEnd: '',
                 });
             });
 
@@ -561,7 +600,7 @@ describe('villageAnalyzer', () => {
                 list.set('0, 3, 0', [0, 3, 0]);
                 list.set('0, 0, ' + mazeD, [0, 0, mazeD]);
 
-                addOutside(ctx, list, 0);
+                addOutside(ctx, list, 0, 100);
 
                 expect(ctx.outsideMaze.has('-1, 0, 1')).toBe(true);
                 expect(ctx.outsideCells.has('-1, 0, 1')).toBe(true);
@@ -596,56 +635,70 @@ describe('villageAnalyzer', () => {
 
                 list.set('1, 1, -1', [1, 1, -1]);
 
-                addOutside(ctx, list, 0);
-                addOutside(ctx, list2, 42);
+                addOutside(ctx, list, 0, 100);
+                addOutside(ctx, list2, 42, 500);
 
                 expect(fct.getInfo(ctx, -1, 0, 0, false)).toEqual({
                     dist: 0,
+                    distEnd: 100,
+                    dirStart: '',
                     dirEnd: 'r',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 0, -1, 0, false)).toEqual({
                     dist: 42,
+                    distEnd: 500,
+                    dirStart: '',
                     dirEnd: 'd',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 0, 0, -1, false)).toEqual({
                     dist: 0,
+                    distEnd: 100,
+                    dirStart: '',
                     dirEnd: 'b',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 3, 0, 0, false)).toEqual({
                     dist: 42,
+                    distEnd: 500,
+                    dirStart: '',
                     dirEnd: 'l',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 0, 3, 0, false)).toEqual({
                     dist: 0,
+                    distEnd: 100,
+                    dirStart: '',
                     dirEnd: 'u',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 0, 0, mazeD, false)).toEqual({
                     dist: 42,
+                    distEnd: 500,
+                    dirStart: '',
                     dirEnd: 't',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 1, 1, -1, false)).toEqual({
                     dist: 0,
+                    distEnd: 100,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
             });
 
@@ -661,7 +714,7 @@ describe('villageAnalyzer', () => {
                 list.set('0, 3, 0', [0, 3, 0]);
                 list.set('0, 0, ' + mazeD, [0, 0, mazeD]);
 
-                addOutside(ctx, list, 0);
+                addOutside(ctx, list, 0, 100);
 
                 expect(fct.getCell(ctx, -1, 0, 0)).toEqual({
                     u: false,
@@ -734,7 +787,7 @@ describe('villageAnalyzer', () => {
                 list.set('2, 2, 2', [2, 2, 2]);
                 list.set('1, 1, 3', [1, 1, 3]);
 
-                addOutside(ctx, list, 0);
+                addOutside(ctx, list, 0, 100);
 
                 expect(ctx.outsideMaze.has('0, 0, 1')).toBe(false);
                 expect(ctx.outsideCells.has('0, 0, 1')).toBe(false);
@@ -757,35 +810,43 @@ describe('villageAnalyzer', () => {
                 list.set('2, 2, 2', [2, 2, 2]);
                 list2.set('1, 1, 3', [1, 1, 3]);
 
-                addOutside(ctx, list, 10);
-                addOutside(ctx, list2, Infinity);
+                addOutside(ctx, list, 10, Infinity);
+                addOutside(ctx, list2, Infinity, -100);
 
                 expect(fct.getInfo(ctx, 0, 0, 1, false)).toEqual({
                     dist: 10,
+                    distEnd: Infinity,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 1, 0, 0, false)).toEqual({
                     dist: Infinity,
+                    distEnd: -100,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 2, 2, 2, false)).toEqual({
                     dist: 10,
+                    distEnd: Infinity,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
 
                 expect(fct.getInfo(ctx, 1, 1, 3, false)).toEqual({
                     dist: Infinity,
+                    distEnd: -100,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
             });
 
@@ -800,7 +861,7 @@ describe('villageAnalyzer', () => {
                 list.set('1, 2, 3', [1, 2, 3]);
                 list.set('1, 0, 2', [1, 0, 2]);
 
-                addOutside(ctx, list, 0);
+                addOutside(ctx, list, 0, 100);
 
                 expect(fct.getCell(ctx, 0, 0, 1)).toEqual({
                     u: true,
@@ -884,7 +945,7 @@ describe('villageAnalyzer', () => {
                 list.set('3, 2, 0', [3, 2, 0]);
                 list.set('3, 3, 0', [3, 3, 0]);
 
-                addOutside(ctx, list, 23);
+                addOutside(ctx, list, 23, 11);
 
                 expect(fct.getCell(ctx, -1, 0, 0)).toEqual({
                     u: false,
@@ -931,30 +992,40 @@ describe('villageAnalyzer', () => {
                     dirEnd: 'r',
                     parentStart: null,
                     dirStart: '',
+                    parentEnd: null,
+                    distEnd: 11,
                 });
                 expect(fct.getInfo(ctx, -1, 1, 0, false)).toEqual({
                     dist: 23,
                     dirEnd: 'r',
                     parentStart: null,
                     dirStart: '',
+                    parentEnd: null,
+                    distEnd: 11,
                 });
                 expect(fct.getInfo(ctx, 2, 2, 0, false)).toEqual({
                     dist: 23,
                     dirEnd: '',
                     parentStart: null,
                     dirStart: '',
+                    parentEnd: null,
+                    distEnd: 11,
                 });
                 expect(fct.getInfo(ctx, 3, 2, 0, false)).toEqual({
                     dist: 23,
                     dirEnd: 'l',
                     parentStart: null,
                     dirStart: '',
+                    parentEnd: null,
+                    distEnd: 11,
                 });
                 expect(fct.getInfo(ctx, 3, 3, 0, false)).toEqual({
                     dist: 23,
                     dirEnd: 'u',
                     parentStart: null,
                     dirStart: '',
+                    parentEnd: null,
+                    distEnd: 11,
                 });
             });
         });
@@ -980,9 +1051,9 @@ describe('villageAnalyzer', () => {
             });
 
             it('should update info', () => {
-                computeCell(ctx, 0, 0, 0, 10, '1, 0, 0', 'l');
-                computeCell(ctx, 1, 2, 1, 5, '1, 1, 1', 'd');
-                computeCell(ctx, 2, 2, 2, 100, '1, 2, 2', 'r');
+                computeCell(ctx, 0, 0, 0, 10, 20, '1, 0, 0', 'l');
+                computeCell(ctx, 1, 2, 1, 5, 2000, '1, 1, 1', 'd');
+                computeCell(ctx, 2, 2, 2, 100, 1, '1, 2, 2', 'r');
 
                 const info1 = fct.getInfo(ctx, 0, 0, 0, true);
                 const info2 = fct.getInfo(ctx, 1, 2, 1, true);
@@ -991,73 +1062,95 @@ describe('villageAnalyzer', () => {
 
                 expect(info1).toEqual({
                     dist: 10,
+                    distEnd: 20,
+                    dirStart: 'l',
                     dirEnd: 'l',
                     parentStart: '1, 0, 0',
-                    dirStart: 'l',
+                    parentEnd: '1, 0, 0',
                 });
 
                 expect(info2).toEqual({
                     dist: 5,
+                    distEnd: 2000,
+                    dirStart: 'd',
                     dirEnd: 'd',
                     parentStart: '1, 1, 1',
-                    dirStart: 'd',
+                    parentEnd: '1, 1, 1',
                 });
 
                 expect(info3).toEqual({
                     dist: 100,
+                    distEnd: 1,
+                    dirStart: 'r',
                     dirEnd: 'r',
                     parentStart: '1, 2, 2',
-                    dirStart: 'r',
+                    parentEnd: '1, 2, 2',
                 });
 
                 expect(infoOutside).toEqual({
                     dist: Infinity,
+                    distEnd: Infinity,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 });
             });
 
             it('should not update info when already submited', () => {
-                computeCell(ctx, 1, 1, 0, 10, '0, 1, 0', 'l');
-                computeCell(ctx, 1, 1, 0, 20, '1, 0, 0', 'd');
+                computeCell(ctx, 1, 1, 0, 10, 2, '0, 1, 0', 'l');
+                computeCell(ctx, 1, 1, 0, 20, 5, '1, 0, 0', 'd');
 
                 const info1 = fct.getInfo(ctx, 1, 1, 0, true);
 
                 expect(ctx.accessible.size).toBe(1);
                 expect(info1).toEqual({
                     dist: 10,
+                    distEnd: 2,
+                    dirStart: 'l',
                     dirEnd: 'l',
                     parentStart: '0, 1, 0',
-                    dirStart: 'l',
+                    parentEnd: '0, 1, 0',
                 });
             });
 
             it('should update info when previous is farther', () => {
-                computeCell(ctx, 1, 1, 0, 20, '1, 0, 0', 'd');
-                computeCell(ctx, 1, 1, 0, 10, '0, 1, 0', 'l');
+                computeCell(ctx, 1, 1, 0, 20, 40, '1, 0, 0', 'd');
+                computeCell(ctx, 1, 1, 0, 10, 5, '0, 1, 0', 'l');
 
                 const info1 = fct.getInfo(ctx, 1, 1, 0, true);
 
                 expect(ctx.accessible.size).toBe(1);
                 expect(info1).toEqual({
                     dist: 10,
-                    dirEnd: 'l',
+                    distEnd: 5,
                     parentStart: '0, 1, 0',
+                    parentEnd: '0, 1, 0',
                     dirStart: 'l',
+                    dirEnd: 'l',
                 });
             });
 
             it('should return true if an update has been done', () => {
-                const rslt1 = computeCell(ctx, 1, 1, 0, 20, '1, 0, 0', 'd');
-                const rslt2 = computeCell(ctx, 1, 1, 0, 10, '0, 1, 0', 'l');
-                const rslt3 = computeCell(ctx, 1, 1, 0, 30, '0, 0, 1', 't');
-                const rslt4 = computeCell(ctx, 4, 1, 0, 30, '0, 0, 1', 't');
+                const rslt1 = computeCell(ctx, 1, 1, 0, 20, 10, '1, 0, 0', 'd');
+                const rslt2 = computeCell(ctx, 1, 1, 0, 10, 10, '0, 1, 0', 'l');
+                const rslt3 = computeCell(ctx, 1, 1, 0, 30, 10, '0, 0, 1', 't');
+                const rslt4 = computeCell(ctx, 4, 1, 0, 30, 10, '0, 0, 1', 't');
 
                 expect(rslt1).toBe(true);
                 expect(rslt2).toBe(true);
                 expect(rslt3).toBe(false);
                 expect(rslt4).toBe(false);
+
+                const rslt11 = computeCell(ctx, 1, 1, 2, 10, 20, '1, 0, 2', 'd');
+                const rslt12 = computeCell(ctx, 1, 1, 2, 10, 10, '0, 1, 2', 'l');
+                const rslt13 = computeCell(ctx, 1, 1, 2, 10, 30, '0, 0, 2', 't');
+                const rslt14 = computeCell(ctx, 4, 1, 2, 10, 30, '0, 0, 2', 't');
+
+                expect(rslt11).toBe(true);
+                expect(rslt12).toBe(true);
+                expect(rslt13).toBe(false);
+                expect(rslt14).toBe(false);
             });
         });
 
@@ -1071,7 +1164,9 @@ describe('villageAnalyzer', () => {
             });
 
             it('should update sibling cells', () => {
-                fct.getInfo(ctx, 1, 1, 0).dist = 10;
+                const info = fct.getInfo(ctx, 1, 1, 0);
+                info.dist = 10;
+                info.distEnd = 100;
                 computeSibling(ctx, 1, 1, 0);
 
                 const info0 = fct.getInfo(ctx, 1, 1, 0);
@@ -1090,6 +1185,14 @@ describe('villageAnalyzer', () => {
                 expect(infoB.dist).toBe(Infinity);
                 expect(infoOther.dist).toBe(Infinity);
 
+                expect(info0.distEnd).toBe(100);
+                expect(infoL.distEnd).toBe(101);
+                expect(infoR.distEnd).toBe(Infinity);
+                expect(infoU.distEnd).toBe(101);
+                expect(infoD.distEnd).toBe(101);
+                expect(infoB.distEnd).toBe(Infinity);
+                expect(infoOther.distEnd).toBe(Infinity);
+
                 expect(info0.dirEnd).toBe('');
                 expect(infoL.dirEnd).toBe('r');
                 expect(infoR.dirEnd).toBe('');
@@ -1105,10 +1208,20 @@ describe('villageAnalyzer', () => {
                 expect(infoD.parentStart).toBe('1, 1, 0');
                 expect(infoB.parentStart).toBe(null);
                 expect(infoOther.parentStart).toBe(null);
+
+                expect(info0.parentEnd).toBe(null);
+                expect(infoL.parentEnd).toBe('1, 1, 0');
+                expect(infoR.parentEnd).toBe(null);
+                expect(infoU.parentEnd).toBe('1, 1, 0');
+                expect(infoD.parentEnd).toBe('1, 1, 0');
+                expect(infoB.parentEnd).toBe(null);
+                expect(infoOther.parentEnd).toBe(null);
             });
 
             it('should update sibling cells through levels', () => {
-                fct.getInfo(ctx, 2, 0, 1).dist = 20;
+                const info = fct.getInfo(ctx, 2, 0, 1);
+                info.dist = 20;
+                info.distEnd = 200;
                 computeSibling(ctx, 2, 0, 1);
 
                 const infoL = fct.getInfo(ctx, 1, 0, 1);
@@ -1121,6 +1234,11 @@ describe('villageAnalyzer', () => {
                 expect(infoT.dist).toBe(21);
                 expect(infoOther.dist).toBe(Infinity);
 
+                expect(infoL.distEnd).toBe(201);
+                expect(infoD.distEnd).toBe(Infinity);
+                expect(infoT.distEnd).toBe(201);
+                expect(infoOther.distEnd).toBe(Infinity);
+
                 expect(infoL.dirEnd).toBe('r');
                 expect(infoD.dirEnd).toBe('');
                 expect(infoT.dirEnd).toBe('b');
@@ -1130,6 +1248,11 @@ describe('villageAnalyzer', () => {
                 expect(infoD.parentStart).toBe(null);
                 expect(infoT.parentStart).toBe('2, 0, 1');
                 expect(infoOther.parentStart).toBe(null);
+
+                expect(infoL.parentEnd).toBe('2, 0, 1');
+                expect(infoD.parentEnd).toBe(null);
+                expect(infoT.parentEnd).toBe('2, 0, 1');
+                expect(infoOther.parentEnd).toBe(null);
             });
 
             it('should update sibling cells from outside', () => {
@@ -1138,10 +1261,13 @@ describe('villageAnalyzer', () => {
                 const info = fct.getInfo(ctx, 0, 2, 0);
 
                 expect(info.dist).toBe(1);
+                expect(info.distEnd).toBe(Infinity);
 
-                expect(info.dirEnd).toBe('l');
+                expect(info.dirStart).toBe('l');
+                expect(info.dirEnd).toBe('');
 
                 expect(info.parentStart).toBe('-1, 2, 0');
+                expect(info.parentEnd).toBe(null);
             });
 
             it('should not update previous sibling cells', () => {
@@ -1160,21 +1286,39 @@ describe('villageAnalyzer', () => {
                 expect(info3.dist).toBe(3);
                 expect(info4.dist).toBe(4);
 
-                expect(info1.dirEnd).toBe('u');
-                expect(info2.dirEnd).toBe('u');
-                expect(info3.dirEnd).toBe('u');
-                expect(info4.dirEnd).toBe('r');
+                expect(info1.distEnd).toBe(Infinity);
+                expect(info2.distEnd).toBe(Infinity);
+                expect(info3.distEnd).toBe(Infinity);
+                expect(info4.distEnd).toBe(Infinity);
+
+                expect(info1.dirStart).toBe('u');
+                expect(info2.dirStart).toBe('u');
+                expect(info3.dirStart).toBe('u');
+                expect(info4.dirStart).toBe('r');
+
+                expect(info1.dirEnd).toBe('');
+                expect(info2.dirEnd).toBe('');
+                expect(info3.dirEnd).toBe('');
+                expect(info4.dirEnd).toBe('');
 
                 expect(info1.parentStart).toBe('2, -1, 0');
                 expect(info2.parentStart).toBe('2, 0, 0');
                 expect(info3.parentStart).toBe('2, 1, 0');
                 expect(info4.parentStart).toBe('2, 2, 0');
+
+                expect(info1.parentEnd).toBe(null);
+                expect(info2.parentEnd).toBe(null);
+                expect(info3.parentEnd).toBe(null);
+                expect(info4.parentEnd).toBe(null);
             });
 
             it('should update previous cells which are farther', () => {
                 fct.getInfo(ctx, 1, 1, 1).dist = 20;
                 fct.getInfo(ctx, 0, 1, 1).dist = 25;
                 fct.getInfo(ctx, 1, 2, 1).dist = 15;
+                fct.getInfo(ctx, 1, 1, 1).distEnd = 200;
+                fct.getInfo(ctx, 0, 1, 1).distEnd = 150;
+                fct.getInfo(ctx, 1, 2, 1).distEnd = 250;
                 computeSibling(ctx, 1, 1, 1);
 
                 const info1 = fct.getInfo(ctx, 0, 1, 1);
@@ -1183,11 +1327,20 @@ describe('villageAnalyzer', () => {
                 expect(info1.dist).toBe(21);
                 expect(info2.dist).toBe(15);
 
-                expect(info1.dirEnd).toBe('r');
-                expect(info2.dirEnd).toBe('');
+                expect(info1.distEnd).toBe(150);
+                expect(info2.distEnd).toBe(201);
+
+                expect(info1.dirStart).toBe('r');
+                expect(info2.dirStart).toBe('');
+
+                expect(info1.dirEnd).toBe('');
+                expect(info2.dirEnd).toBe('u');
 
                 expect(info1.parentStart).toBe('1, 1, 1');
                 expect(info2.parentStart).toBe(null);
+
+                expect(info1.parentEnd).toBe(null);
+                expect(info2.parentEnd).toBe('1, 1, 1');
             });
 
             it('should return true if an update has been done', () => {
@@ -1297,6 +1450,8 @@ describe('villageAnalyzer', () => {
                 ctx.cells = __buildCells();
                 ctx.startCells = new Map([['0, 0, 0', [0, 0, 0]]]);
                 ctx.endCells = new Map([['2, 2, 1', [2, 2, 1]]]);
+                fct.addOutside(ctx, ctx.startCells, 0, Infinity);
+                fct.addOutside(ctx, ctx.endCells, Infinity, 0);
             });
 
             it('should have compute the shortest length', () => {
@@ -1319,70 +1474,96 @@ describe('villageAnalyzer', () => {
                 computeDistance(ctx);
                 computeDirections(ctx);
 
+                const info0 = fct.getInfo(ctx, 0, 0, 0, true); // on path (start)
                 const info1 = fct.getInfo(ctx, 1, 1, 0, true); // on path
                 const info2 = fct.getInfo(ctx, 0, 1, 1, true); // on path
-                const info3 = fct.getInfo(ctx, 2, 2, 1, true); // on path
+                const info3 = fct.getInfo(ctx, 2, 2, 1, true); // on path (end)
                 const info4 = fct.getInfo(ctx, 2, 0, 1, true); // on path
                 const info10 = fct.getInfo(ctx, 0, 1, 0, true); // outside path
                 const info11 = fct.getInfo(ctx, 2, 1, 1, true); // outside path
                 const info12 = fct.getInfo(ctx, 1, 1, 2, true); // outside alternate path
                 const info13 = fct.getInfo(ctx, 2, 1, 2, true); // outside alternate path
 
+                expect(info0).toEqual({
+                    dist: 0,
+                    distEnd: 13,
+                    dirStart: '',
+                    dirEnd: 'r',
+                    parentStart: null,
+                    parentEnd: '1, 0, 0',
+                });
+
                 expect(info1).toEqual({
                     dist: 2,
+                    distEnd: 11,
+                    dirStart: 'u',
                     dirEnd: 'd',
                     parentStart: '1, 0, 0',
-                    dirStart: 'u',
+                    parentEnd: '1, 2, 0',
                 });
 
                 expect(info2).toEqual({
                     dist: 10,
+                    distEnd: 3,
+                    dirStart: 'u',
                     dirEnd: 'r',
                     parentStart: '0, 0, 1',
-                    dirStart: 'u',
+                    parentEnd: '1, 1, 1',
                 });
 
                 expect(info3).toEqual({
                     dist: 13,
-                    dirEnd: 'l',
-                    parentStart: '1, 2, 1',
+                    distEnd: 0,
                     dirStart: 'l',
+                    dirEnd: '',
+                    parentStart: '1, 2, 1',
+                    parentEnd: null,
                 });
 
                 expect(info4).toEqual({
                     dist: 7,
+                    distEnd: 6,
+                    dirStart: 't',
                     dirEnd: 'l',
                     parentStart: '2, 0, 0',
-                    dirStart: 't',
+                    parentEnd: '1, 0, 1',
                 });
 
                 expect(info10).toEqual({
                     dist: 3,
+                    distEnd: 12,
+                    dirStart: 'r',
                     dirEnd: 'r',
                     parentStart: '1, 1, 0',
-                    dirStart: 'r',
+                    parentEnd: '1, 1, 0',
                 });
 
                 expect(info11).toEqual({
                     dist: 14,
+                    distEnd: 1,
+                    dirStart: 'd',
                     dirEnd: 'd',
                     parentStart: '2, 2, 1',
-                    dirStart: 'd',
+                    parentEnd: '2, 2, 1',
                 });
 
                 /* Alternate path */
                 expect(info12).toEqual({
                     dist: 14,
-                    dirEnd: 'l',
-                    parentStart: '0, 1, 2',
+                    distEnd: 5,
                     dirStart: 'l',
+                    dirEnd: 'd',
+                    parentStart: '0, 1, 2',
+                    parentEnd: '1, 2, 2',
                 });
 
                 expect(info13).toEqual({
                     dist: 15,
+                    distEnd: 2,
+                    dirStart: 't',
                     dirEnd: 't',
                     parentStart: '2, 1, 1',
-                    dirStart: 't',
+                    parentEnd: '2, 1, 1',
                 });
             });
 
@@ -1391,6 +1572,7 @@ describe('villageAnalyzer', () => {
                     ['2, 2, 1', [2, 2, 1]],
                     ['0, 2, 0', [0, 2, 0]],
                 ]);
+                fct.addOutside(ctx, ctx.endCells, Infinity, 0);
                 computeDistance(ctx);
 
                 const lngth = computeDirections(ctx);
@@ -1403,23 +1585,29 @@ describe('villageAnalyzer', () => {
 
                 expect(info1).toEqual({
                     dist: 2,
+                    distEnd: 2,
+                    dirStart: 'u',
                     dirEnd: 'd',
                     parentStart: '1, 0, 0',
-                    dirStart: 'u',
+                    parentEnd: '1, 2, 0',
                 });
 
                 expect(info2).toEqual({
                     dist: 3,
+                    distEnd: 1,
+                    dirStart: 'u',
                     dirEnd: 'l',
                     parentStart: '1, 1, 0',
-                    dirStart: 'u',
+                    parentEnd: '0, 2, 0',
                 });
 
                 expect(info11).toEqual({
                     dist: 12,
-                    dirEnd: 'u',
-                    parentStart: '1, 1, 1',
+                    distEnd: 1,
                     dirStart: 'u',
+                    dirEnd: 'r',
+                    parentStart: '1, 1, 1',
+                    parentEnd: '2, 2, 1',
                 });
             });
         });
@@ -1499,6 +1687,8 @@ describe('villageAnalyzer', () => {
         describe('computeOneMovement', () => {
             const computeOneMovement = fct.computeOneMovement;
             const ctx = __buildCtx();
+            fct.addOutside(ctx, ctx.startCells, 0, Infinity);
+            fct.addOutside(ctx, ctx.endCells, Infinity, 0);
             fct.computeDistance(ctx);
             fct.computeDirections(ctx);
 
@@ -1570,10 +1760,10 @@ describe('villageAnalyzer', () => {
 
                 const options3 = { normal: false, opposite: true, reverse: true };
                 const rslt31 = computeOneMovement(ctx, 1, 2, 1, ['d', 'l', 't'], options3);
-                const rslt32 = computeOneMovement(ctx, 1, 2, 2, ['d', 'l', 'b'], options3);
+                const rslt32 = computeOneMovement(ctx, 1, 1, 2, ['u', 'r', 'b'], options3);
 
                 expect(rslt31).toEqual([0, 0, 1, 0, 1, ['u', 'l', 'b'], 'ub', '0, 0, 1']);
-                expect(rslt32).toEqual([2, 2, 2, 0, 1, ['d', 'r', 't'], 'rt', '2, 2, 2']);
+                expect(rslt32).toEqual([0, 1, 2, 0, 1, ['u', 'l', 't'], 'lt', '0, 1, 2']);
 
                 const options4 = { normal: true, opposite: true, reverse: true };
                 const rslt41 = computeOneMovement(ctx, 1, 0, 3, ['u', 'l', 't'], options4);
@@ -1603,6 +1793,7 @@ describe('villageAnalyzer', () => {
 
             it('should works with simple movement', () => {
                 ctx.endCells = new Map([['1, 0, 0', [1, 0, 0]]]);
+                fct.addOutside(ctx, ctx.endCells, Infinity, 0);
                 fct.computeDistance(ctx);
 
                 const [mvt, complexMvt, hardMvt] = computeMovements(ctx, 0, 0, 0);
@@ -1617,13 +1808,15 @@ describe('villageAnalyzer', () => {
 
                 const [mvt, complexMvt, hardMvt] = computeMovements(ctx, 0, 0, 0);
 
-                expect(mvt).toEqual(['', 'r', 'u', 'l', 'd', 'r', 't', 'u', 'd']);
+                // XXX: order of move may change
+                expect(mvt).toEqual(['', 'r', 'u', 'd', 'l', 'r', 't', 'u', 'd']);
                 expect(complexMvt).toBe(0);
                 expect(hardMvt).toBe(0);
             });
 
             it('should not throw if it is not possible', () => {
                 ctx.endCells = new Map([['1, 0, 2', [1, 0, 2]]]);
+                fct.addOutside(ctx, ctx.endCells, Infinity, 0);
                 fct.computeDistance(ctx);
 
                 const [mvt, complexMvt, hardMvt] = computeMovements(ctx, 0, 0, 0);
@@ -1636,6 +1829,8 @@ describe('villageAnalyzer', () => {
             it('should works with more complex movements', () => {
                 ctx.startCells = new Map([['0, 2, 5', [0, 2, 5]]]);
                 ctx.endCells = new Map([['1, 0, 5', [1, 0, 5]]]);
+                fct.addOutside(ctx, ctx.startCells, 0, Infinity);
+                fct.addOutside(ctx, ctx.endCells, Infinity, 0);
                 fct.computeDistance(ctx);
 
                 const [mvt, complexMvt, hardMvt] = computeMovements(ctx, 0, 2, 5);
@@ -1679,7 +1874,9 @@ describe('villageAnalyzer', () => {
                 dirEnd: 'd',
                 dirStart: 'u',
                 dist: 2,
+                distEnd: 11,
                 parentStart: '1, 0, 0',
+                parentEnd: '1, 2, 0',
             });
             expect(rslt.accessible).toHaveLength(42);
             expect(rslt.movements).toEqual(['', 'r', 'u', 'd', 'l', 'r', 't', 'u', 'd']);
@@ -1703,10 +1900,12 @@ describe('villageAnalyzer', () => {
             expect(rslt.cells[0]).toHaveLength(3);
             expect(rslt.cells[0][0]).toHaveLength(mazeD);
             expect(rslt.cells[1][1][0]).toEqual({
-                dirEnd: 'u',
                 dirStart: 'u',
+                dirEnd: 'd',
                 dist: 2,
+                distEnd: 11,
                 parentStart: '1, 0, 0',
+                parentEnd: '1, 2, 0',
             });
             expect(rslt.accessible).toHaveLength(42);
             expect(rslt.movements).toEqual(['', 'l', 't', 'd', 'r', 'u', 'd']);
@@ -1730,10 +1929,12 @@ describe('villageAnalyzer', () => {
             expect(rslt.cells[0]).toHaveLength(3);
             expect(rslt.cells[0][0]).toHaveLength(mazeD);
             expect(rslt.cells[1][1][0]).toEqual({
-                dirEnd: 'u',
                 dirStart: 'u',
+                dirEnd: '',
                 dist: 3,
+                distEnd: Infinity,
                 parentStart: '1, 0, 0',
+                parentEnd: null,
             });
             expect(rslt.accessible).toHaveLength(52);
             expect(rslt.movements).toEqual(['', 'l', 'd', 'ur']);
@@ -1744,14 +1945,3 @@ describe('villageAnalyzer', () => {
         });
     });
 });
-
-/*
-describe('HelloWorld.vue', () => {
-  it('should render correct contents', () => {
-    const Constructor = Vue.extend(HelloWorld)
-    const vm = new Constructor().$mount()
-    expect(vm.$el.querySelectorAll('.menu a').length)
-      .toBe(2)
-  })
-})
-*/

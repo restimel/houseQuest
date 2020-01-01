@@ -180,9 +180,11 @@ const analyzeHlp = {
         }
         return cells[x] && cells[x][y] && cells[x][y][z] || outsideCells.get(analyzeHlp.getId(x, y, z)) || {
             dist: Infinity,
+            distEnd: Infinity,
+            dirStart: '',
             dirEnd: '',
             parentStart: null,
-            dirStart: '',
+            parentEnd: null,
         };
     },
     getDirection: function getDirectionCell(ctx, x, y, z, direction) {
@@ -196,7 +198,7 @@ const analyzeHlp = {
 
         return [nX, nY, nZ, currentCell[direction] && directionCell[oppDirection]];
     },
-    addOutside: function addOutside(ctx, kind, defaultDist) {
+    addOutside: function addOutside(ctx, kind, defaultStartDist, defaultEndDist) {
         kind.forEach(([x, y, z], id) => {
             let mazeCell, cell;
             let isInside = false;
@@ -206,14 +208,17 @@ const analyzeHlp = {
                 isInside = true;
                 mazeCell = ctx.maze[x][y][z];
                 cell = analyzeHlp.getInfo(ctx, x, y, z);
-                cell.dist = defaultDist;
+                cell.dist = defaultStartDist;
+                cell.distEnd = defaultEndDist;
             } else {
                 mazeCell = Object.assign({}, wallCell);
                 cell = {
-                    dist: defaultDist,
+                    dist: defaultStartDist,
+                    distEnd: defaultEndDist,
+                    dirStart: '',
                     dirEnd: '',
                     parentStart: null,
-                    dirStart: '',
+                    parentEnd: null,
                 };
             }
             let idNghb, passage;
@@ -278,32 +283,40 @@ const analyzeHlp = {
             }
         });
     },
-    computeCell: function computeCell(ctx, x, y, z, dist, parentStart, dir) {
+    computeCell: function computeCell(ctx, x, y, z, dist, distEnd, parent, dir) {
         const { accessible } = ctx;
         const id = analyzeHlp.getId(x, y, z);
         const cell = analyzeHlp.getInfo(ctx, x, y, z, true);
         if (!cell) {
             return false;
         }
-        if (cell.dist <= dist) {
-            return false;
+        let hasChanged = false;
+        if (cell.dist > dist) {
+            cell.dist = dist;
+            cell.parentStart = parent;
+            cell.dirStart = dir;
+            accessible.set(id, [x, y, z]);
+            hasChanged = true;
         }
-        cell.dist = dist;
-        cell.parentStart = parentStart;
-        cell.dirStart = dir;
-        cell.dirEnd = dir;
-        accessible.set(id, [x, y, z]);
-        return true;
+        if (cell.distEnd > distEnd) {
+            cell.distEnd = distEnd;
+            cell.parentEnd = parent;
+            cell.dirEnd = dir;
+            accessible.set(id, [x, y, z]);
+            hasChanged = true;
+        }
+        return hasChanged;
     },
     computeSibling: function computeSibling(ctx, x, y, z = 0) {
         const { maze } = ctx;
         const id = analyzeHlp.getId(x, y, z);
         let cell = analyzeHlp.getCell(ctx, x, y, z, false);
-        let dist;
+        let dist, distEnd;
         let hasChanged = false;
 
         if (!cell) {
             dist = 1;
+            distEnd = Infinity;
             cell = {
                 u: analyzeHlp.getCell(ctx, x, y - 1, z).d,
                 d: analyzeHlp.getCell(ctx, x, y + 1, z).u,
@@ -313,26 +326,28 @@ const analyzeHlp = {
                 t: analyzeHlp.getCell(ctx, x, y, z - 1).b,
             };
         } else {
-            dist = analyzeHlp.getInfo(ctx, x, y, z).dist + 1;
+            const info = analyzeHlp.getInfo(ctx, x, y, z);
+            dist = info.dist + 1;
+            distEnd = info.distEnd + 1;
         }
 
         if (cell.u) {
-            hasChanged = analyzeHlp.computeCell(ctx, x, y - 1, z, dist, id, 'd') || hasChanged;
+            hasChanged = analyzeHlp.computeCell(ctx, x, y - 1, z, dist, distEnd, id, 'd') || hasChanged;
         }
         if (cell.d) {
-            hasChanged = analyzeHlp.computeCell(ctx, x, y + 1, z, dist, id, 'u') || hasChanged;
+            hasChanged = analyzeHlp.computeCell(ctx, x, y + 1, z, dist, distEnd, id, 'u') || hasChanged;
         }
         if (cell.r) {
-            hasChanged = analyzeHlp.computeCell(ctx, x + 1, y, z, dist, id, 'l') || hasChanged;
+            hasChanged = analyzeHlp.computeCell(ctx, x + 1, y, z, dist, distEnd, id, 'l') || hasChanged;
         }
         if (cell.l) {
-            hasChanged = analyzeHlp.computeCell(ctx, x - 1, y, z, dist, id, 'r') || hasChanged;
+            hasChanged = analyzeHlp.computeCell(ctx, x - 1, y, z, dist, distEnd, id, 'r') || hasChanged;
         }
         if (cell.b) {
-            hasChanged = analyzeHlp.computeCell(ctx, x, y, z + 1, dist, id, 't') || hasChanged;
+            hasChanged = analyzeHlp.computeCell(ctx, x, y, z + 1, dist, distEnd, id, 't') || hasChanged;
         }
         if (cell.t) {
-            hasChanged = analyzeHlp.computeCell(ctx, x, y, z - 1, dist, id, 'b') || hasChanged;
+            hasChanged = analyzeHlp.computeCell(ctx, x, y, z - 1, dist, distEnd, id, 'b') || hasChanged;
         }
 
         return hasChanged;
@@ -615,9 +630,11 @@ function analyze({maze, starts, ends}) {
                 // cells initialization
                 cells[x][y][z] = {
                     dist: Infinity,
+                    distEnd: Infinity,
                     dirEnd: '',
-                    parentStart: null,
                     dirStart: '',
+                    parentStart: null,
+                    parentEnd: null,
                 };
             }
         }
@@ -638,8 +655,8 @@ function analyze({maze, starts, ends}) {
     };
 
     /* Add start and end cells */
-    analyzeHlp.addOutside(ctx, startCells, 0);
-    analyzeHlp.addOutside(ctx, endCells, Infinity);
+    analyzeHlp.addOutside(ctx, startCells, 0, Infinity);
+    analyzeHlp.addOutside(ctx, endCells, Infinity, 0);
 
     /* compute distance and set available cells */
     analyzeHlp.computeDistance(ctx);
