@@ -21,7 +21,7 @@
     "fast-levenshtein": "^2.0.6",
     "i": "^0.3.6",
     "npm": "^6.2.0",
-    "vue": "^2.5.2",
+    "vue": "^3.0.0",
     "vue-router": "^3.0.1",
     "vue-slider-component": "^2.7.4"
   },
